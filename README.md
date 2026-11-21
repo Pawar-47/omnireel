@@ -86,6 +86,15 @@ Once a key is in `.env`, the same command makes a genuine film, and 20 seconds c
 
 Start there rather than at two minutes: a stuck model costs you two calls, not twenty-four.
 
+See the plan before paying for it — this makes no API call at all:
+
+```bash
+.venv/bin/python scripts/smoke_run.py --seconds 20 --dry-run --live \
+  --prompt "A red fox trots through a snowy pine forest at dusk, stops, and looks straight at the camera"
+```
+
+It prints the clip lengths your configuration makes available, then every scene's duration, prompt, camera and lighting. `--prompt` and `--style` work the same way on a real run.
+
 ### Watch the film without spending a call
 
 Every push to `main` renders the 20-second film and uploads it, so the result can be looked at before any key is configured:

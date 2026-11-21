@@ -37,6 +37,11 @@ jobs:
         working-directory: backend
         run: python -m pytest -q
 
+      - name: Plan a 20 second film from a short prompt (no API calls)
+        run: |
+          python scripts/smoke_run.py --seconds 20 --dry-run --live \
+            --prompt "A red fox trots through a snowy pine forest at dusk, stops, and looks straight at the camera"
+
       - name: End-to-end film at 20 seconds (mock provider, real FFmpeg)
         env:
           OMNIREEL_DATA_DIR: ${{ runner.temp }}/omnireel-smoke

@@ -12,6 +12,7 @@ Two modes, and the difference matters:
 Examples::
 
     python scripts/smoke_run.py --seconds 20 --expect 20      # offline proof
+    python scripts/smoke_run.py --seconds 20 --dry-run        # the plan, no calls
     python scripts/smoke_run.py --seconds 20 --live           # a real 20 s film
     python scripts/smoke_run.py --minutes 2 --expect 120      # full length
 
@@ -35,13 +36,39 @@ sys.path.insert(0, str(ROOT / "backend"))
 from omnireel import store  # noqa: E402
 from omnireel.app import Application  # noqa: E402
 from omnireel.assembly import AssemblyError  # noqa: E402
-from omnireel.capabilities import ModelSpec  # noqa: E402
+from omnireel.capabilities import CapabilityRegistry, ModelSpec  # noqa: E402
 from omnireel.config import Settings  # noqa: E402
 from omnireel.planner import plan_storyboard  # noqa: E402
 from omnireel.providers.mock import MockProvider  # noqa: E402
 
 #: How far the finished film may drift from ``--expect`` before it is a failure.
 EXPECT_TOLERANCE = 1.0
+
+#: Prompt used when ``--prompt`` is not given: two visual beats, because a
+#: 20-second film over a free ladder is usually two clips.
+DEFAULT_PROMPT = (
+    "A red fox trots through a snowy pine forest at dusk, stops, "
+    "and looks straight at the camera"
+)
+
+
+def print_storyboard(storyboard, *, ladder: list[float] | None = None) -> None:
+    """Show exactly what a run would generate, without spending a call."""
+    if ladder:
+        print("clip lengths available: " + ", ".join(f"{value:g}s" for value in ladder))
+    print(
+        f"title:  {storyboard.title}\n"
+        f"style:  {storyboard.style}\n"
+        f"plan:   {len(storyboard.shots)} scenes, "
+        f"{storyboard.planned_seconds:.1f}s of {storyboard.target_seconds:g}s"
+    )
+    for position, shot in enumerate(storyboard.shots, start=1):
+        print(f"\n  scene {position}  {shot.duration:.1f}s  {shot.beat or 'beat'}")
+        print(f"    description: {shot.description}")
+        print(f"    prompt:      {shot.prompt}")
+        print(f"    camera:      {shot.camera}")
+        print(f"    lighting:    {shot.lighting}")
+        print(f"    continuity:  {shot.continuity}")
 
 
 class SecondMock(MockProvider):
@@ -74,9 +101,12 @@ def build_app(settings: Settings, *, with_second_mock: bool) -> Application:
 async def run(
     target: float,
     *,
+    prompt: str,
+    style: str,
     live: bool,
     expect: float | None,
     timeout: float,
+    dry_run: bool,
 ) -> int:
     # The catalogue reads this flag when the registry is built, so it has to be
     # set before Settings and Application are created.
@@ -87,6 +117,22 @@ async def run(
         os.environ.setdefault("OMNIREEL_ALLOW_PAID", "false")
 
     settings = Settings.from_env()
+
+    if dry_run:
+        registry = CapabilityRegistry.default(settings)
+        storyboard = plan_storyboard(
+            prompt,
+            target_seconds=target,
+            style=style,
+            registry=registry,
+            free_only=settings.free_only,
+        )
+        print_storyboard(
+            storyboard, ladder=registry.durations_ladder(free_only=settings.free_only)
+        )
+        print("\nNo API call made - this is the plan a real run would execute.")
+        return 0
+
     if not live:
         settings.poll_interval_seconds = 0.0
         settings.worker_interval_seconds = 0.0
@@ -125,8 +171,9 @@ async def run(
         return 2
 
     storyboard = plan_storyboard(
-        "a smoke test documentary about a lighthouse at dawn",
+        prompt,
         target_seconds=target,
+        style=style,
         registry=application.registry,
         free_only=settings.free_only,
     )
@@ -218,6 +265,22 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--seconds", type=float, help="film length in seconds (wins over --minutes)"
     )
+    parser.add_argument(
+        "--prompt",
+        default=DEFAULT_PROMPT,
+        help="the creative prompt to film (default: a two-beat 20 s shot)",
+    )
+    parser.add_argument(
+        "--style",
+        default="cinematic",
+        help="a style key from /api/config - cinematic, documentary, anime, nature, "
+        "noir, scifi, product, explainer ... (default: cinematic)",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="print the storyboard and the available clip lengths, then stop",
+    )
     parser.add_argument("--minutes", type=float, default=None, help="film length in minutes")
     parser.add_argument(
         "--expect",
@@ -256,7 +319,15 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         return asyncio.run(
-            run(target, live=args.live, expect=args.expect, timeout=args.timeout)
+            run(
+                target,
+                prompt=args.prompt,
+                style=args.style,
+                live=args.live,
+                expect=args.expect,
+                timeout=args.timeout,
+                dry_run=args.dry_run,
+            )
         )
     except AssemblyError as exc:  # pragma: no cover - defensive
         print(f"assembly error: {exc}", file=sys.stderr)

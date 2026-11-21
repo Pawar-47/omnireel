@@ -13,6 +13,12 @@ Two more genuinely free video sources, one paid aggregator, and a licence review
 - Six Pollinations models catalogued with durations read from the live registry, including the only 15 s length in the catalogue.
 
 ### Added — tooling
+- `scripts/smoke_run.py --prompt` and `--style`: run any creative prompt rather
+  than the built-in test one.
+- `scripts/smoke_run.py --dry-run`: prints the available clip lengths and the
+  full storyboard (each scene's duration, prompt, camera, lighting, continuity)
+  and exits without spending a call, so a plan can be judged before it is paid
+  for.
 - The mock provider now draws a slate into every clip — clip number, duration,
   resolution, aspect and prompt — so an assembled film can be inspected frame by
   frame instead of being an unlabelled flat colour. Falls back to a plain card
