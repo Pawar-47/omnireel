@@ -184,7 +184,7 @@ class Scheduler:
         if mode not in MODES:
             mode = "balanced"
         if free_only is None:
-            free_only = bool(project.get("free_only", True)) and not self.settings.allow_paid
+            free_only = bool(project.get("free_only", True)) or not self.settings.allow_paid
         weights = WEIGHTS[mode]
         preferred = (project.get("preferred_provider") or "").strip()
         wanted_duration = float(scene.get("duration_seconds") or 10.0)
@@ -388,7 +388,7 @@ class Scheduler:
             provider = self._provider(candidate.provider)
             if provider is None:
                 continue
-            free_only = bool(project.get("free_only", True)) and not self.settings.allow_paid
+            free_only = bool(project.get("free_only", True)) or not self.settings.allow_paid
             ok, reason = self.ledger.check(candidate.spec, candidate.key_id, free_only=free_only)
             if not ok:
                 errors.append({"provider": candidate.provider, "model": candidate.model, "error": reason})

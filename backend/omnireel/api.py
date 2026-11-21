@@ -230,7 +230,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(status_code=422, detail=f"unknown generation mode '{payload.mode}'")
         if payload.aspect_ratio not in ASPECT_RATIOS:
             raise HTTPException(status_code=422, detail="unsupported aspect ratio")
-        free_only = payload.free_only and not app_ctx.settings.allow_paid
+        # Paid generation is impossible unless the operator enabled it, and a project
+        # that asks for free-only stays free-only even then.
+        free_only = bool(payload.free_only) or not app_ctx.settings.allow_paid
 
         storyboard = plan_storyboard(
             payload.prompt,

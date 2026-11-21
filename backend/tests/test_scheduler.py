@@ -115,3 +115,32 @@ def test_start_scene_stores_the_job_and_remote_id(app_ctx):
     job = app_ctx.db.one("SELECT * FROM jobs WHERE scene_id=?", (scene["id"],))
     assert job is not None
     assert job["status"] in {"submitted", "succeeded"}
+
+
+
+def test_paid_models_stay_excluded_until_the_operator_opts_in(app_ctx):
+    """The safety invariant: no paid model may run without an explicit opt-in."""
+    app_ctx.registry.replace(
+        make_spec("mock", model="paid-only", free_kind="none", quality=5, speed=5)
+    )
+
+    # Operator has not enabled paid usage, and the project did not ask for free-only.
+    app_ctx.settings.allow_paid = False
+    project, _ = create_running_project(app_ctx, target=40, free_only=False)
+    scene = store.scenes_for(app_ctx.db, project["id"])[0]
+    ranked = app_ctx.scheduler.rank(project, scene)
+    assert ranked, "free models must still be ranked"
+    assert all(candidate.spec.free_kind != "none" for candidate in ranked)
+
+    # Even with paid usage allowed, a free-only project stays free-only.
+    app_ctx.settings.allow_paid = True
+    still_free, _ = create_running_project(app_ctx, target=40, free_only=True)
+    scene = store.scenes_for(app_ctx.db, still_free["id"])[0]
+    ranked = app_ctx.scheduler.rank(still_free, scene)
+    assert all(candidate.spec.free_kind != "none" for candidate in ranked)
+
+    # Only an explicitly paid project may reach it.
+    paid, _ = create_running_project(app_ctx, target=40, free_only=False)
+    scene = store.scenes_for(app_ctx.db, paid["id"])[0]
+    ranked = app_ctx.scheduler.rank(paid, scene)
+    assert any(candidate.spec.free_kind == "none" for candidate in ranked)
