@@ -13,6 +13,13 @@ Two more genuinely free video sources, one paid aggregator, and a licence review
 - Six Pollinations models catalogued with durations read from the live registry, including the only 15 s length in the catalogue.
 
 ### Added — tooling
+- The mock provider now draws a slate into every clip — clip number, duration,
+  resolution, aspect and prompt — so an assembled film can be inspected frame by
+  frame instead of being an unlabelled flat colour. Falls back to a plain card
+  when no font or no `drawtext` is available, so it can never fail a project.
+- CI uploads the 20-second film, its per-scene clips and a ten-frame contact
+  sheet as the `omnireel-20s-film` artifact on every push, for visual inspection
+  without a key.
 - `scripts/smoke_run.py --seconds 20 --expect 20`: asks for a 20-second film,
   then fails unless the assembled MP4 really measures 20 s (1 s tolerance). CI
   now gates every push on exactly that, with the mock provider and real FFmpeg.

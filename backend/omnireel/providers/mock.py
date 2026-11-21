@@ -1,9 +1,13 @@
 """Offline mock provider.
 
 Used by the automated tests and by ``scripts/smoke_run.py``. It produces a
-labelled colour clip with FFmpeg when FFmpeg is available, otherwise a small
-placeholder file, so the whole orchestration path can be exercised without
-spending anybody's quota. It is never presented as AI footage.
+colour card with FFmpeg when FFmpeg is available, otherwise a small placeholder
+file, so the whole orchestration path can be exercised without spending
+anybody's quota.
+
+Where a font is installed the card carries a slate - clip number, duration,
+resolution, aspect and prompt - so the finished film can be inspected frame by
+frame and its timeline checked by eye. It is never presented as AI footage.
 """
 
 from __future__ import annotations
@@ -17,6 +21,16 @@ from .base import PollResult, ProviderError, SubmitResult, VideoRequest, VideoPr
 
 FPS = 24
 
+#: Fonts tried for the slate. The first that exists wins; without one the card
+#: is a plain colour, which is still a valid clip for orchestration tests.
+FONT_CANDIDATES = (
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    "/usr/share/fonts/dejavu/DejaVuSans.ttf",
+    "/usr/share/fonts/TTF/DejaVuSans.ttf",
+    "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+    "/System/Library/Fonts/Supplemental/Arial.ttf",
+)
+
 
 class MockProvider(VideoProvider):
     id = "mock"
@@ -29,6 +43,7 @@ class MockProvider(VideoProvider):
         self.submit_calls: list[dict] = []
         #: Tests may set this to raise for the next N submissions.
         self.fail_next: list[str] = []
+        self._clip_no = 0
 
     # -- API -------------------------------------------------------------
     async def submit(self, model: str, request: VideoRequest, *, key_index: int = 0) -> SubmitResult:
@@ -48,11 +63,15 @@ class MockProvider(VideoProvider):
             raise ProviderError(f"mock failure: {kind}", kind=kind)
 
         remote_id = f"mock-{uuid.uuid4().hex[:12]}"
+        self._clip_no += 1
         self._jobs[remote_id] = {
             "prompt": request.prompt,
             "duration": request.duration,
             "aspect_ratio": request.aspect_ratio,
             "resolution": request.resolution,
+            "model": model,
+            "provider": self.id,
+            "clip_no": self._clip_no,
             "polls": 0,
             "status": "processing",
         }
@@ -100,7 +119,20 @@ class MockProvider(VideoProvider):
             side = min(width, height)
             width = height = side
 
-        hue = (abs(hash(remote_id)) % 360)
+        hue = abs(hash(remote_id)) % 360
+        colour = f"0x{hue:06x}"
+        filters = self._slate_filters(remote_id, job, width, height)
+        try:
+            await self._encode(ffmpeg, target, width, height, duration, colour, filters)
+        except ProviderError:
+            if not filters:
+                raise
+            # A build without freetype, or a font ffmpeg cannot open, must not
+            # fail the whole project: fall back to the plain colour card.
+            await self._encode(ffmpeg, target, width, height, duration, colour, [])
+        return target.as_uri()
+
+    async def _encode(self, ffmpeg, target, width, height, duration, colour, filters) -> None:
         args = [
             ffmpeg,
             "-y",
@@ -110,11 +142,15 @@ class MockProvider(VideoProvider):
             "-f",
             "lavfi",
             "-i",
-            f"color=c=0x{hue:06x}:s={width}x{height}:r={FPS}:d={duration}",
+            f"color=c={colour}:s={width}x{height}:r={FPS}:d={duration}",
             "-f",
             "lavfi",
             "-i",
             f"anullsrc=channel_layout=stereo:sample_rate=48000:d={duration}",
+        ]
+        if filters:
+            args += ["-vf", ",".join(filters)]
+        args += [
             "-c:v",
             "libx264",
             "-preset",
@@ -137,7 +173,43 @@ class MockProvider(VideoProvider):
                 f"mock renderer failed: {stderr.decode('utf-8', 'replace')[-300:]}",
                 kind="transient",
             )
-        return target.as_uri()
+
+    @staticmethod
+    def _font() -> str | None:
+        for candidate in FONT_CANDIDATES:
+            if Path(candidate).is_file():
+                return candidate
+        return None
+
+    def _slate_filters(self, remote_id, job, width, height) -> list[str]:
+        """Label the clip so the assembled film can be inspected by eye."""
+        font = self._font()
+        if font is None:
+            return []
+        slate = Path(self.settings.data_dir) / "tmp" / f"mock-{remote_id}.txt"
+        slate.parent.mkdir(parents=True, exist_ok=True)
+        slate.write_text(self._slate_text(job, width, height), encoding="utf-8")
+        font_size = max(16, height // 22)
+        line_spacing = max(6, height // 60)
+        return [
+            f"drawtext=fontfile={font}:textfile={slate}:fontcolor=white"
+            f":fontsize={font_size}:line_spacing={line_spacing}"
+            f":x=(w-text_w)/2:y=(h-text_h)/2"
+            f":box=1:boxcolor=black@0.45:boxborderw=18"
+        ]
+
+    @staticmethod
+    def _slate_text(job, width, height) -> str:
+        base = " ".join(str(job.get("prompt") or "").split())
+        lines = [base[index : index + 56] for index in range(0, min(len(base), 224), 56)]
+        header = [
+            f"{str(job.get('provider') or 'mock').upper()} CLIP {job.get('clip_no', 1)}",
+            f"{float(job.get('duration') or 0):.1f}s   {width}x{height}   "
+            f"{job.get('aspect_ratio')}   {job.get('resolution')}",
+            "MOCK SLATE - NOT AI FOOTAGE",
+            "",
+        ]
+        return "\n".join(header + (lines or [""])) + "\n"
 
     async def download(self, url: str, destination: Path) -> Path:
         """The mock writes locally, so hand the file over instead of fetching it."""

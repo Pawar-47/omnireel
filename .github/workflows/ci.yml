@@ -26,7 +26,7 @@ jobs:
       - name: Install FFmpeg
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends ffmpeg espeak-ng
+          sudo apt-get install -y --no-install-recommends ffmpeg espeak-ng fonts-dejavu-core
 
       - name: Install Python dependencies
         run: |
@@ -42,6 +42,29 @@ jobs:
           OMNIREEL_DATA_DIR: ${{ runner.temp }}/omnireel-smoke
         run: |
           python scripts/smoke_run.py --seconds 20 --expect 20
+
+      - name: Contact sheet from the film
+        env:
+          OMNIREEL_DATA_DIR: ${{ runner.temp }}/omnireel-smoke
+        run: |
+          FILM=$(ls "$OMNIREEL_DATA_DIR"/outputs/*.mp4 | head -n 1)
+          echo "film: $FILM"
+          ffprobe -v error -show_entries format=duration,size -of default=nw=1 "$FILM"
+          ffmpeg -y -hide_banner -loglevel error -i "$FILM" \
+            -vf "fps=1/2,scale=320:-1,tile=5x2:padding=4:margin=0:color=black" \
+            -frames:v 1 "$OMNIREEL_DATA_DIR/contact-sheet.png"
+          ls -l "$OMNIREEL_DATA_DIR/contact-sheet.png"
+
+      - name: Upload the 20 second film for visual inspection
+        uses: actions/upload-artifact@v4
+        with:
+          name: omnireel-20s-film
+          path: |
+            ${{ runner.temp }}/omnireel-smoke/outputs/*.mp4
+            ${{ runner.temp }}/omnireel-smoke/contact-sheet.png
+            ${{ runner.temp }}/omnireel-smoke/clips/**/*.mp4
+          if-no-files-found: error
+          retention-days: 30
 
       - name: Verify the app imports and boots its schema
         working-directory: backend

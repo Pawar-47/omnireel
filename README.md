@@ -86,6 +86,16 @@ Once a key is in `.env`, the same command makes a genuine film, and 20 seconds c
 
 Start there rather than at two minutes: a stuck model costs you two calls, not twenty-four.
 
+### Watch the film without spending a call
+
+Every push to `main` renders the 20-second film and uploads it, so the result can be looked at before any key is configured:
+
+1. Open the repository's **Actions** tab and pick the newest **CI** run.
+2. At the bottom of the run page, download the **`omnireel-20s-film`** artifact.
+3. Inside: `outputs/*.mp4` (the joined film), `contact-sheet.png` (ten frames on one image — the quickest check on a phone) and `clips/` (the per-scene pieces before assembly).
+
+Each clip carries a slate naming its number, length, resolution and prompt, so the timeline is readable frame by frame. These are mock clips, not AI footage: they prove the assembly, not a model.
+
 Full instructions: [INSTALLATION.md](INSTALLATION.md). Keys and endpoints: [API_CONFIGURATION.md](API_CONFIGURATION.md).
 
 ## Provider status — read this before expecting free footage
