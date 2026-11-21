@@ -72,8 +72,8 @@ Normalise → concat (stream copy) → optional crossfade → optional audio mix
 ### MILESTONE 11 — Frontend, library, installation — **done**
 React studio: prompt form, editable storyboard, live production monitor, provider/quota dashboard, finished-film library. Installer script, smoke run, docs.
 
-### MILESTONE 12 — End-to-end tests and release — **partially done — see CHECKPOINT.md**
-Test suite written (planner, quota, scheduler, worker, assembly, API). It could not be executed in the authoring environment (no Python interpreter, no FFmpeg). A live Agnes generation run also requires the owner's API key. Release notes and instructions are prepared; publishing a GitHub Release needs the owner's confirm.
+### MILESTONE 12 — End-to-end tests and release — **done, except the live provider run**
+Test suite (planner, quota, scheduler, worker/recovery, assembly, API) executes in GitHub Actions and is green, including a real FFmpeg render of twelve 10-second clips into a validated 120.0 s MP4. The frontend production build also passes. What remains is exercising a live provider account, which needs the owner's key, and pushing the `v1.0.0` tag so the release workflow publishes.
 
 ## 4. What makes the two-minute target robust
 

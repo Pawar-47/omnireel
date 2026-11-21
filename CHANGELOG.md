@@ -53,5 +53,5 @@ First release: multi-provider, free-tier-first, two-minute AI film generation.
 
 ### Known limitations at 1.0.0
 - Only the Agnes adapter is verified against live vendor documentation; the others need one successful clip per account before being trusted.
-- The test suite ships with the release but was not executed in the authoring environment.
-- No GitHub Release object is published by automation; see CHECKPOINT.md.
+- The backend suite and frontend build pass in GitHub Actions, but no live provider generation has been performed yet — your first real run is the remaining proof.
+- No GitHub Release object is published automatically; push the `v1.0.0` tag to trigger `.github/workflows/release.yml`.

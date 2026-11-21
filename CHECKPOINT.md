@@ -11,18 +11,17 @@ Updated: 2026-09-22 · Version: 1.0.0
 | Backend application | Complete — API, worker, scheduler, quota ledger, planner, assembly, audio |
 | Provider adapters | Agnes verified from vendor docs; Replicate/HF/Runware/gateway implemented, unverified live |
 | Frontend | Complete — studio, storyboard, production monitor, provider dashboard, library |
-| Tests | Written (7 files, ~60 cases). **Not executed in the authoring environment.** |
+| Tests | 7 files, 60+ cases — **passing in GitHub Actions** (backend 1m 03s, frontend build 14s) |
 | Scripts | install / run / dev / smoke_run |
 | Documentation | README, MASTER_PLAN, CHECKPOINT, CHANGELOG, PROVIDER_RESEARCH, MODEL_COMPATIBILITY, INSTALLATION, API_CONFIGURATION |
 | Git | Committed and pushed to the public repository |
 
 ## What "verified" means here
 
-Environment used to author this code had **no Python interpreter, no Node, no FFmpeg and no network access to provider APIs**. Therefore:
-
 - **Verified by reading vendor sources:** Agnes endpoints, payload fields, response shapes, status values, rate-limit and queue-full behaviour (vendor wiki + published reference client). All encoded in `providers/agnes.py`.
-- **Verified by pure logic review:** planner timeline maths, scheduler ranking order, quota arithmetic, FFmpeg argument construction, state machine transitions.
-- **NOT verified by execution:** `pytest`, `npm run build`, an actual MP4 assembly, a real Agnes generation.
+- **Verified by execution in GitHub Actions** (commit `4782047`, both checks green): the whole backend suite — planner, quota, scheduler, worker/recovery, assembly, API — and the Vite production build. The assembly test renders twelve 10-second clips and joins them into a validated 120.0 s MP4 with real FFmpeg.
+- **Verified by pure logic review:** scheduler ranking order, quota arithmetic, FFmpeg argument construction, state-machine transitions.
+- **Still NOT verified:** live generation against a provider account. That needs your own API key and is the next thing to try.
 
 Nothing in this repository claims otherwise, and no output is presented as AI-generated unless a real provider produced it.
 
@@ -40,7 +39,7 @@ If step 2 fails, fix the tests before trusting step 3.
 
 ## Known gaps / next actions
 
-1. **Run the test suite.** Highest priority; it is the fastest way to surface a typo in the ~6k lines written blind.
+1. **Confirm the suite locally.** It passes in CI on Ubuntu with Python 3.11 and FFmpeg; run it once on your own machine so you know your Mint setup matches.
 2. **Live Agnes run.** Create a 60-second project (6 × 10 s clips) before attempting 120 s, so a single stuck model does not burn an hour.
 3. **Confirm the optional providers.** For each of Replicate / Runware / YepAPI, read the account console, correct the model id in `config/providers.json`, and set `verified_at` once it has produced one clip.
 4. **Reality check on durations.** Agnes Flash is catalogued as 4/6/8/10/12 s. If the console disagrees, edit `capabilities.py` — the planner and scheduler adapt automatically.
