@@ -16,14 +16,20 @@ from .base import (
     VideoRequest,
     classify_http,
 )
+from .bigmodel import BigModelProvider
 from .huggingface import HuggingFaceProvider
 from .mock import MockProvider
+from .modelscope import ModelScopeProvider
+from .pollinations import PollinationsProvider
 from .replicate import ReplicateProvider
 from .runware import RunwareProvider
 from .yepapi import YepApiProvider
 
 PROVIDER_CLASSES: tuple[type[VideoProvider], ...] = (
     AgnesProvider,
+    BigModelProvider,
+    ModelScopeProvider,
+    PollinationsProvider,
     ReplicateProvider,
     HuggingFaceProvider,
     RunwareProvider,
@@ -43,9 +49,12 @@ def configured_providers(providers: dict[str, VideoProvider]) -> list[str]:
 __all__ = [
     "PROVIDER_CLASSES",
     "AgnesProvider",
+    "BigModelProvider",
     "HuggingFaceProvider",
     "MockProvider",
+    "ModelScopeProvider",
     "PollResult",
+    "PollinationsProvider",
     "ProviderError",
     "ReplicateProvider",
     "RunwareProvider",

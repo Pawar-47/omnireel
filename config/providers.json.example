@@ -41,6 +41,32 @@
       "free_kind": "trial",
       "enabled": false,
       "notes": "One-off startup credits only."
+    },
+    {
+      "_comment": [
+        "Example: promote a paid aggregator model once you have decided to spend.",
+        "This only matters when OMNIREEL_ALLOW_PAID=true - free_max never selects it.",
+        "Refresh the whole set instead of editing by hand:",
+        "  .venv/bin/python scripts/discover_models.py --write"
+      ],
+      "provider": "pollinations",
+      "model": "alibaba/wan-2.6",
+      "label": "WAN 2.6 (15 s)",
+      "durations": [5, 10, 15],
+      "resolutions": ["720p"],
+      "aspect_ratios": ["16:9", "9:16"],
+      "free_kind": "none",
+      "enabled": false,
+      "notes": "The only 15 s clip available; paid."
+    },
+    {
+      "_comment": "Example: pin the real clip length once BigModel tells you what cogvideox-flash returns.",
+      "provider": "bigmodel",
+      "model": "cogvideox-flash",
+      "durations": [5],
+      "free_kind": "recurring",
+      "enabled": true,
+      "notes": "Edit durations here if your account returns a different clip length."
     }
   ]
 }

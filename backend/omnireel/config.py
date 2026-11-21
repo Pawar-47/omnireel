@@ -87,6 +87,9 @@ def collect_keys(prefix: str) -> list[str]:
 #: Environment variable prefix per provider id.
 KEY_ENV_PREFIX = {
     "agnes": "AGNES_API_KEY",
+    "bigmodel": "BIGMODEL_API_KEY",
+    "modelscope": "MODELSCOPE_API_TOKEN",
+    "pollinations": "POLLINATIONS_API_KEY",
     "replicate": "REPLICATE_API_TOKEN",
     "huggingface": "HF_TOKEN",
     "runware": "RUNWARE_API_KEY",

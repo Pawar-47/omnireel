@@ -167,6 +167,81 @@ CATALOG: list[ModelSpec] = [
         ),
     ),
     _spec(
+        provider="bigmodel",
+        model="cogvideox-flash",
+        label="CogVideoX-Flash (Zhipu)",
+        durations=[5],
+        resolutions=["1080p"],
+        aspect_ratios=["16:9", "9:16", "1:1"],
+        text_to_video=True,
+        image_to_video=True,
+        reference_frame=True,
+        native_audio=False,
+        quality=3,
+        speed=3,
+        free_kind="recurring",
+        daily_free_requests=None,
+        min_interval_seconds=6.0,
+        docs_url="https://docs.bigmodel.cn/cn/guide/models/free/cogvideox-flash",
+        verified_at="2026-11-22",
+        notes=(
+            "Priced 免费 (free) on BigModel's own pricing page, which makes this a "
+            "second recurring free video source. The request schema for this model has "
+            "no duration field: the service decides the clip length, so 5 s is the "
+            "planning assumption, the delivered length is measured, and FFmpeg trims. "
+            "Per-account concurrency is unpublished (error 1302 when exceeded)."
+        ),
+    ),
+    _spec(
+        provider="modelscope",
+        model="MiniMax/MiniMax-H3",
+        label="MiniMax H3 (ModelScope)",
+        durations=[3, 5, 10],
+        resolutions=["720p"],
+        aspect_ratios=["16:9", "9:16", "1:1"],
+        text_to_video=True,
+        image_to_video=False,
+        reference_frame=False,
+        native_audio=False,
+        quality=4,
+        speed=3,
+        free_kind="recurring",
+        daily_free_requests=None,
+        min_interval_seconds=5.0,
+        docs_url="https://www.modelscope.cn/docs/model-service/API-Inference/intro",
+        verified_at="2026-11-22",
+        notes=(
+            "Free, but credit-metered: a daily 魔粒 wallet (~200 for signing in, plus "
+            "50 for binding an Alibaba Cloud account) pays a few credits per video "
+            "call, so the ledger stays estimated. The 3/5/10 s durations are "
+            "API-Inference's own table for the MiniMax family. Needs a bound, "
+            "real-name verified Alibaba Cloud account. Image conditioning is not wired "
+            "because the documented 'media' field takes a public URL."
+        ),
+    ),
+    _spec(
+        provider="bigmodel",
+        model="cogvideox-3",
+        label="CogVideoX-3 (Zhipu)",
+        durations=[5, 10],
+        resolutions=["1080p", "720p"],
+        aspect_ratios=["16:9", "9:16", "1:1"],
+        text_to_video=True,
+        image_to_video=True,
+        reference_frame=True,
+        native_audio=True,
+        quality=5,
+        speed=2,
+        free_kind="none",
+        min_interval_seconds=6.0,
+        docs_url="https://docs.bigmodel.cn/cn/guide/models/video-generation/cogvideox-3",
+        verified_at="2026-11-22",
+        notes=(
+            "5 s or 10 s clips up to 4K, first/last-frame generation and native audio, "
+            "billed at 1 CNY per call. Paid, so free-only mode never selects it."
+        ),
+    ),
+    _spec(
         provider="replicate",
         model="minimax/video-01",
         label="MiniMax Video-01 (Replicate)",
@@ -256,6 +331,134 @@ CATALOG: list[ModelSpec] = [
             "recurring allowance, so this stays out of free-only mode. Set the real "
             "model id in config/providers.json before enabling."
         ),
+    ),
+    # -- Pollinations: one key, every major hosted model behind /video/{prompt}.
+    # All of these are flagged paid_only in the live registry, so they are never
+    # used in free-only mode. Durations come from GET /video/models, not from a
+    # guessing table; scripts/discover_models.py can refresh this set on demand.
+    _spec(
+        provider="pollinations",
+        model="google/veo-3.1-fast",
+        label="Veo 3.1 Fast (Pollinations)",
+        durations=[4, 6, 8],
+        resolutions=["720p", "1080p"],
+        aspect_ratios=["16:9", "9:16"],
+        text_to_video=True,
+        image_to_video=False,
+        reference_frame=False,
+        native_audio=True,
+        quality=5,
+        speed=4,
+        free_kind="none",
+        min_interval_seconds=3.0,
+        docs_url="https://gen.pollinations.ai/docs",
+        verified_at="2026-11-22",
+        notes=(
+            "Registry advertises allowed_durations 4/6/8 with start and end frame "
+            "support. Paid only. OmniReel does not send a start frame here, because "
+            "the parameter needs a public image URL."
+        ),
+    ),
+    _spec(
+        provider="pollinations",
+        model="kwaivgi/kling-v3.0-std",
+        label="Kling 3.0 Standard (Pollinations)",
+        durations=[5, 10],
+        resolutions=["720p"],
+        aspect_ratios=["16:9", "9:16"],
+        text_to_video=True,
+        image_to_video=False,
+        reference_frame=False,
+        native_audio=True,
+        quality=4,
+        speed=3,
+        free_kind="none",
+        min_interval_seconds=3.0,
+        docs_url="https://gen.pollinations.ai/docs",
+        verified_at="2026-11-22",
+        notes=(
+            "Registry range is 3-15 s continuous; OmniReel requests the discrete 5 or "
+            "10 s lengths its planner uses. Paid only."
+        ),
+    ),
+    _spec(
+        provider="pollinations",
+        model="lightricks/ltx-2.5-pro",
+        label="LTX 2.5 Pro (Pollinations)",
+        durations=[6, 8, 10],
+        resolutions=["720p", "1080p"],
+        aspect_ratios=["16:9", "9:16"],
+        text_to_video=True,
+        image_to_video=False,
+        reference_frame=False,
+        native_audio=True,
+        quality=4,
+        speed=4,
+        free_kind="none",
+        min_interval_seconds=3.0,
+        docs_url="https://gen.pollinations.ai/docs",
+        verified_at="2026-11-22",
+        notes="allowed_durations 6/8/10 in the live registry. Paid only.",
+    ),
+    _spec(
+        provider="pollinations",
+        model="alibaba/wan-2.6",
+        label="WAN 2.6 (Pollinations)",
+        durations=[5, 10, 15],
+        resolutions=["720p"],
+        aspect_ratios=["16:9", "9:16"],
+        text_to_video=True,
+        image_to_video=False,
+        reference_frame=False,
+        native_audio=True,
+        quality=4,
+        speed=3,
+        free_kind="none",
+        min_interval_seconds=3.0,
+        docs_url="https://gen.pollinations.ai/docs",
+        verified_at="2026-11-22",
+        notes=(
+            "allowed_durations 5/10/15 - the only long clip in the set, useful when a "
+            "target duration cannot be reached with 5-10 s pieces. Paid only."
+        ),
+    ),
+    _spec(
+        provider="pollinations",
+        model="minimax/minimax-h3",
+        label="MiniMax H3 (Pollinations)",
+        durations=[5],
+        resolutions=["480p", "720p"],
+        aspect_ratios=["16:9", "9:16"],
+        text_to_video=True,
+        image_to_video=False,
+        reference_frame=False,
+        native_audio=True,
+        quality=4,
+        speed=4,
+        free_kind="none",
+        min_interval_seconds=3.0,
+        docs_url="https://gen.pollinations.ai/docs",
+        verified_at="2026-11-22",
+        notes="Fixed 5 s with synchronised stereo audio. Paid only.",
+    ),
+    _spec(
+        provider="pollinations",
+        model="bytedance/seedance-2.0-mini",
+        label="Seedance 2.0 Mini (Pollinations)",
+        durations=[5, 10],
+        resolutions=["480p", "720p"],
+        aspect_ratios=["16:9", "9:16"],
+        text_to_video=True,
+        image_to_video=False,
+        reference_frame=False,
+        native_audio=True,
+        quality=3,
+        speed=4,
+        free_kind="none",
+        min_interval_seconds=3.0,
+        docs_url="https://gen.pollinations.ai/docs",
+        verified_at="2026-11-22",
+        notes="Registry range 4-10 s. Cheapest per second of the set. Paid only.",
     ),
     _spec(
         provider="mock",
