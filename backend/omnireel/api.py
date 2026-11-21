@@ -7,6 +7,7 @@ generation, watch progress, regenerate single scenes, assemble, download.
 from __future__ import annotations
 
 import logging
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
@@ -124,12 +125,25 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or Settings.from_env()
     omni = Application.build(settings)
 
+    @asynccontextmanager
+    async def lifespan(_app: FastAPI):
+        omni.worker.start()  # type: ignore[union-attr]
+        logger.info(
+            "OmniReel started - providers configured: %s",
+            ", ".join(omni.configured_provider_ids()) or "none",
+        )
+        try:
+            yield
+        finally:
+            await omni.aclose()
+
     app = FastAPI(
         title="OmniReel",
         version=__version__,
         description=(
             "Multi-provider AI video studio: one prompt in, one assembled ~120 second film out."
         ),
+        lifespan=lifespan,
     )
     app.state.omni = omni
 
@@ -145,18 +159,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-
-    @app.on_event("startup")
-    async def _startup() -> None:
-        omni.worker.start()  # type: ignore[union-attr]
-        logger.info(
-            "OmniReel started - providers configured: %s",
-            ", ".join(omni.configured_provider_ids()) or "none",
-        )
-
-    @app.on_event("shutdown")
-    async def _shutdown() -> None:
-        await omni.aclose()
 
     # -- meta -----------------------------------------------------------
     @app.get("/api/health")

@@ -105,7 +105,9 @@ def test_shots_carry_continuity_and_style():
     assert "documentary" in shot.prompt.lower()
     assert shot.lighting != ""
     assert storyboard.world_bible["style"] == "documentary"
-    assert "sunset" in storyboard.world_bible["lighting"].lower()
+    # The sunset profile resolves to golden-hour lighting rather than the word "sunset".
+    assert "golden" in storyboard.world_bible["lighting"].lower()
+    assert shot.lighting == storyboard.world_bible["lighting"]
 
 
 def test_unknown_style_falls_back_to_cinematic():
