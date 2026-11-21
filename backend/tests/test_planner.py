@@ -138,3 +138,35 @@ def test_empty_prompt_is_rejected():
         assert "prompt" in str(exc)
     else:  # pragma: no cover
         raise AssertionError("empty prompt should raise")
+
+
+
+def test_camera_field_is_the_one_written_into_the_prompt():
+    """The prompt and the storyboard must agree on the camera move.
+
+    Every third shot takes a varied camera; this used to be drawn inside
+    build_shot_prompt only, so Shot.camera kept the beat's move and the two
+    disagreed - a camera edited on screen never reached the model.
+    """
+    storyboard = plan_storyboard(
+        "a red fox in a snowy forest at dusk",
+        target_seconds=60,
+        registry=registry_with([10]),
+    )
+    assert len(storyboard.shots) >= 4  # past the index%3 == 0 variants
+    for shot in storyboard.shots:
+        assert f"Camera: {shot.camera}." in shot.prompt, shot.index
+
+
+def test_setting_phrase_does_not_collect_verbs():
+    """The location phrase must not be built from the verb tail of the prompt."""
+    storyboard = plan_storyboard(
+        "A red fox trots through a snowy pine forest at dusk, stops, "
+        "and looks straight at the camera",
+        target_seconds=20,
+        registry=registry_with([12, 8]),
+    )
+    setting = storyboard.world_bible["setting"].lower()
+    for word in ("camera", "looks", "stops", "straight"):
+        assert word not in setting
+    assert "forest" in setting

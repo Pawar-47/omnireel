@@ -405,6 +405,39 @@ def detect_lighting(prompt: str) -> str:
     return DEFAULT_LIGHTING
 
 
+#: Words that describe what happens, or how the camera shoots it, rather than
+#: where the scene takes place. Without this the setting phrase filled up with
+#: verbs from the tail of the prompt: "Setting: forest dusk stops looks camera".
+SETTING_SKIP = {
+    "trots",
+    "walks",
+    "runs",
+    "moves",
+    "stops",
+    "looks",
+    "turns",
+    "stands",
+    "holds",
+    "drifts",
+    "flies",
+    "swims",
+    "climbs",
+    "enters",
+    "leaves",
+    "waits",
+    "straight",
+    "toward",
+    "towards",
+    "through",
+    "across",
+    "camera",
+    "slowly",
+    "then",
+    "while",
+    "again",
+}
+
+
 def analyse_prompt(prompt: str, style: str) -> dict:
     """Extract the reusable creative facts that every shot must honour."""
     text = clean_prompt(prompt)
@@ -415,7 +448,9 @@ def analyse_prompt(prompt: str, style: str) -> dict:
     setting_words = [
         w
         for w in re.findall(r"[A-Za-z0-9'-]+", text)
-        if w.lower() not in STOPWORDS and len(w) > 3
+        if w.lower() not in STOPWORDS
+        and w.lower() not in SETTING_SKIP
+        and len(w) > 3
     ][-6:]
     setting = " ".join(setting_words) if setting_words else subject
 
@@ -495,6 +530,19 @@ def beats_for(count: int) -> list[Beat]:
 # --------------------------------------------------------------------------
 
 
+def choose_camera(beat: Beat, *, index: int, world: dict, style: str) -> str:
+    """The camera move actually written into the prompt.
+
+    Every third shot takes a varied move so consecutive beats do not all share
+    one camera. The storyboard's own ``camera`` field reads this same value: it
+    used to keep ``beat.camera`` while the prompt drew a random variant, so the
+    two disagreed and editing the camera on screen changed nothing that reached
+    the model.
+    """
+    rng = random.Random(f"{world['subject']}|{style}|{index}".lower())
+    return beat.camera if index % 3 else rng.choice(CAMERA_VARIANTS)
+
+
 def build_shot_prompt(
     *,
     index: int,
@@ -504,8 +552,7 @@ def build_shot_prompt(
     style: str,
     aspect_ratio: str,
 ) -> str:
-    rng = random.Random(f"{world['subject']}|{style}|{index}".lower())
-    camera = beat.camera if index % 3 else rng.choice(CAMERA_VARIANTS)
+    camera = choose_camera(beat, index=index, world=world, style=style)
     continuity = (
         f"Continuity: keep the same subject ({world['subject']}), the same wardrobe and "
         f"props, the same location, the same colour palette ({world['palette']}) and the "
@@ -581,7 +628,7 @@ def plan_storyboard(
                 duration=duration,
                 description=f"{beat.shot} - {beat.name}",
                 prompt=shot_prompt,
-                camera=beat.camera,
+                camera=choose_camera(beat, index=index, world=world, style=style_key),
                 subject_motion=beat.motion,
                 lighting=world["lighting"],
                 environment=world["setting"],

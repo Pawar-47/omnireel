@@ -41,6 +41,13 @@ Two more genuinely free video sources, one paid aggregator, and a licence review
 - `.env.example`, `PROVIDER_RESEARCH.md`, `MODEL_COMPATIBILITY.md`, `README.md` updated with the new sources and the audit's publishable findings.
 
 ### Fixed
+- The storyboard's `camera` field and the `Camera:` line inside the prompt
+  disagreed on every third shot: the prompt drew a random camera variant while
+  the field kept the beat's own move, so a camera edited on screen never reached
+  the model. Both now read one `choose_camera()` helper, with a regression test.
+- The `setting` phrase was built from the last words of the prompt and collected
+  verbs: "Setting: forest dusk stops looks camera". Motion and framing words are
+  now skipped, so it reads "red fox snowy pine forest dusk".
 - `classify_http()` no longer lets a response body that merely mentions a balance
   reclassify an HTTP 402 as an exhausted free allowance. A provider asking for
   payment now stays `paid_required` (6-hour pause) instead of `quota` (30-minute
