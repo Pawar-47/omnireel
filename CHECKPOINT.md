@@ -44,7 +44,14 @@ If step 2 fails, fix the tests before trusting step 3.
 2. **Live Agnes run.** Create a 60-second project (6 × 10 s clips) before attempting 120 s, so a single stuck model does not burn an hour.
 3. **Confirm the optional providers.** For each of Replicate / Runware / YepAPI, read the account console, correct the model id in `config/providers.json`, and set `verified_at` once it has produced one clip.
 4. **Reality check on durations.** Agnes Flash is catalogued as 4/6/8/10/12 s. If the console disagrees, edit `capabilities.py` — the planner and scheduler adapt automatically.
-5. **Publish the GitHub release.** Release notes are in `CHANGELOG.md`; creating the release itself needs the owner (`gh release create v1.0.0` or the web UI). No release-creation tool is available in this environment.
+5. **Publish the GitHub release.** Release notes are in `CHANGELOG.md` and a tag-triggered workflow (`.github/workflows/release.yml`) does the rest:
+
+   ```bash
+   git tag -a v1.0.0 -m "OmniReel 1.0.0"
+   git push origin v1.0.0
+   ```
+
+   No release-creation tool is available in the authoring environment, so this final step belongs to the owner.
 
 ## How to resume after an interruption
 
