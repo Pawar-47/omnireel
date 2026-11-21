@@ -1,0 +1,46 @@
+{
+  "_comment": [
+    "Copy this file to config/providers.json to override the built-in catalogue.",
+    "Nothing here is required - OmniReel works with its documented defaults.",
+    "Use it to correct a duration, add a model, or switch a provider off."
+  ],
+
+  "disable": [],
+
+  "enable": [],
+
+  "models": [
+    {
+      "_comment": "Example: pin Agnes 2.5 once you have confirmed its clip lengths in the console.",
+      "provider": "agnes",
+      "model": "agnes-video-2.5",
+      "label": "Agnes Video 2.5",
+      "durations": [5, 10, 15, 20],
+      "resolutions": ["720p"],
+      "aspect_ratios": ["16:9", "9:16", "1:1"],
+      "text_to_video": true,
+      "image_to_video": true,
+      "reference_frame": true,
+      "quality": 4,
+      "speed": 2,
+      "free_kind": "promo",
+      "daily_free_requests": null,
+      "min_interval_seconds": 4,
+      "enabled": false,
+      "docs_url": "https://wiki.agnes-ai.com/en/docs/overview",
+      "notes": "Unverified duration set - confirm before enabling."
+    },
+    {
+      "_comment": "Example: your Runware account's real video model id.",
+      "provider": "runware",
+      "model": "video-default",
+      "label": "Runware video",
+      "durations": [5, 10],
+      "resolutions": ["720p"],
+      "aspect_ratios": ["16:9", "9:16"],
+      "free_kind": "trial",
+      "enabled": false,
+      "notes": "One-off startup credits only."
+    }
+  ]
+}

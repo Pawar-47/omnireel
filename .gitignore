@@ -1,0 +1,39 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+
+# --- Node ---
+node_modules/
+dist/
+.vite/
+
+# --- OmniReel runtime data (never commit generated media or keys) ---
+data/
+clips/
+outputs/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+.env
+.env.*
+!.env.example
+
+# --- Media ---
+*.mp4
+*.mov
+*.webm
+*.wav
+*.mp3
+*.m4a
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/

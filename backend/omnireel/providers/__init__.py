@@ -1,0 +1,59 @@
+"""Provider registry.
+
+Adding a provider means adding a class with an ``id`` and implementing
+``submit``/``poll``; the scheduler never needs to know it exists.
+"""
+
+from __future__ import annotations
+
+from ..config import Settings
+from .agnes import AgnesProvider
+from .base import (
+    PollResult,
+    ProviderError,
+    SubmitResult,
+    VideoProvider,
+    VideoRequest,
+    classify_http,
+)
+from .huggingface import HuggingFaceProvider
+from .mock import MockProvider
+from .replicate import ReplicateProvider
+from .runware import RunwareProvider
+from .yepapi import YepApiProvider
+
+PROVIDER_CLASSES: tuple[type[VideoProvider], ...] = (
+    AgnesProvider,
+    ReplicateProvider,
+    HuggingFaceProvider,
+    RunwareProvider,
+    YepApiProvider,
+    MockProvider,
+)
+
+
+def build_providers(settings: Settings) -> dict[str, VideoProvider]:
+    return {provider_cls.id: provider_cls(settings) for provider_cls in PROVIDER_CLASSES}
+
+
+def configured_providers(providers: dict[str, VideoProvider]) -> list[str]:
+    return [provider_id for provider_id, provider in providers.items() if provider.configured]
+
+
+__all__ = [
+    "PROVIDER_CLASSES",
+    "AgnesProvider",
+    "HuggingFaceProvider",
+    "MockProvider",
+    "PollResult",
+    "ProviderError",
+    "ReplicateProvider",
+    "RunwareProvider",
+    "SubmitResult",
+    "VideoProvider",
+    "VideoRequest",
+    "YepApiProvider",
+    "build_providers",
+    "classify_http",
+    "configured_providers",
+]
