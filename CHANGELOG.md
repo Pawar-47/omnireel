@@ -13,6 +13,15 @@ Two more genuinely free video sources, one paid aggregator, and a licence review
 - Six Pollinations models catalogued with durations read from the live registry, including the only 15 s length in the catalogue.
 
 ### Added — tooling
+- `.github/workflows/live_demo.yml`: **Live 20 second film**. A manually
+  dispatched workflow that generates a genuine AI film from the GitHub web UI,
+  with the prompt and length as inputs and the storyboard printed before any
+  call is spent. Needs one repository secret (`BIGMODEL_API_KEY`, free).
+  Uploads `REAL-AI-film`.
+- The CI artifact is renamed `pipeline-test-mock-20s-not-ai-footage`. It was
+  called `omnireel-20s-film`, which was read - reasonably - as "the film this
+  project makes". It is a pipeline test: colour cards with a slate, never AI
+  footage.
 - `scripts/smoke_run.py --prompt` and `--style`: run any creative prompt rather
   than the built-in test one.
 - `scripts/smoke_run.py --dry-run`: prints the available clip lengths and the

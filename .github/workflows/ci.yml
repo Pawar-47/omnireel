@@ -60,10 +60,10 @@ jobs:
             -frames:v 1 "$OMNIREEL_DATA_DIR/contact-sheet.png"
           ls -l "$OMNIREEL_DATA_DIR/contact-sheet.png"
 
-      - name: Upload the 20 second film for visual inspection
+      - name: Upload the mock film (a pipeline test, NOT AI footage)
         uses: actions/upload-artifact@v4
         with:
-          name: omnireel-20s-film
+          name: pipeline-test-mock-20s-not-ai-footage
           path: |
             ${{ runner.temp }}/omnireel-smoke/outputs/*.mp4
             ${{ runner.temp }}/omnireel-smoke/contact-sheet.png

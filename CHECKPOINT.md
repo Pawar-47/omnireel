@@ -44,6 +44,12 @@ Free keys worth getting first, in this order: **Zhipu BigModel** (CogVideoX-Flas
 
 ## Known gaps / next actions
 
+0. **Generate a real film.** Nothing in this repository has ever produced an AI
+   frame: every video so far is the mock provider (colour cards with a slate).
+   The CI artifact proves the pipeline, not a model. To get a real film without a
+   local install, add `BIGMODEL_API_KEY` as a repository secret and run
+   **Actions → Live 20 second film**. Two calls, ~20 s of footage.
+
 1. **Confirm the suite locally.** It passes in CI on Ubuntu with Python 3.11 and FFmpeg; run it once on your own machine so you know your Mint setup matches.
 2. **Measure `cogvideox-flash`'s real clip length.** Generate one clip, run `ffprobe` on it, and correct `durations` in `config/providers.json`. Until then 5 s is a planning assumption and the assembler trims the difference.
 3. **Live run, 60 seconds first.** Six 10 s clips, so a single stuck model does not burn an hour.

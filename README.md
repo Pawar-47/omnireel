@@ -76,7 +76,7 @@ Prove the machine works before spending a call — a 20-second film takes second
 .venv/bin/python scripts/smoke_run.py --seconds 20 --expect 20
 ```
 
-That runs the whole chain (storyboard → scheduler → providers → FFmpeg) with the offline mock provider and real FFmpeg, and **fails unless the finished MP4 measures 20 s**. `--minutes 2` does the same at full length. Mock clips are plain colour cards — never mistake them for AI footage.
+That runs the whole chain (storyboard → scheduler → providers → FFmpeg) with the offline mock provider and real FFmpeg, and **fails unless the finished MP4 measures 20 s**. `--minutes 2` does the same at full length. Mock clips are labelled colour cards, never AI footage.
 
 Once a key is in `.env`, the same command makes a genuine film, and 20 seconds costs only two calls:
 
@@ -95,15 +95,22 @@ See the plan before paying for it — this makes no API call at all:
 
 It prints the clip lengths your configuration makes available, then every scene's duration, prompt, camera and lighting. `--prompt` and `--style` work the same way on a real run.
 
-### Watch the film without spending a call
+### What the CI artifact is — and is not
 
-Every push to `main` renders the 20-second film and uploads it, so the result can be looked at before any key is configured:
+Every push to `main` renders a 20-second film and uploads it as **`pipeline-test-mock-20s-not-ai-footage`**. Those frames come from the mock provider: flat colour cards carrying a text slate with the scene number, length and prompt. They prove the timeline solver, the scheduler, the download path and the FFmpeg join on real files. **They are not AI footage.** If you open that MP4 expecting a film, you will see a coloured card with writing on it — that is the whole point of it, and the name now says so.
 
-1. Open the repository's **Actions** tab and pick the newest **CI** run.
-2. At the bottom of the run page, download the **`omnireel-20s-film`** artifact.
-3. Inside: `outputs/*.mp4` (the joined film), `contact-sheet.png` (ten frames on one image — the quickest check on a phone) and `clips/` (the per-scene pieces before assembly).
+### Get a real film from your phone
 
-Each clip carries a slate naming its number, length, resolution and prompt, so the timeline is readable frame by frame. These are mock clips, not AI footage: they prove the assembly, not a model.
+No terminal, no local install — GitHub runs it:
+
+1. Get a free key at [bigmodel.cn](https://bigmodel.cn). CogVideoX-Flash is priced 免费 and needs no card.
+2. In this repository: **Settings → Secrets and variables → Actions → New repository secret**, name it `BIGMODEL_API_KEY`, paste the key.
+3. **Actions → Live 20 second film → Run workflow**, type your prompt, press Run.
+4. When it finishes, download the **`REAL-AI-film`** artifact: the MP4, a contact sheet, and the per-scene clips.
+
+The workflow prints the storyboard into the run log *before* spending a call, so you can see the scenes and their prompts first. `AGNES_API_KEY` or `MODELSCOPE_API_TOKEN` work in place of the BigModel key.
+
+At 20 seconds this is two API calls. Start there, not at 120.
 
 Full instructions: [INSTALLATION.md](INSTALLATION.md). Keys and endpoints: [API_CONFIGURATION.md](API_CONFIGURATION.md).
 
