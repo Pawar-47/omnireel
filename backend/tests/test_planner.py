@@ -170,3 +170,45 @@ def test_setting_phrase_does_not_collect_verbs():
     for word in ("camera", "looks", "stops", "straight"):
         assert word not in setting
     assert "forest" in setting
+
+
+
+def test_plan_follows_only_configured_providers():
+    """A catalogued model whose provider has no key must not shape the plan.
+
+    With only a 5 s provider configured, planning from the full catalogue would
+    ask for a 12 s shot (Agnes) and then wait forever, because no configured
+    model can generate 12 s.
+    """
+    registry = CapabilityRegistry(
+        [
+            ModelSpec(
+                provider="agnes",
+                model="a",
+                durations=[12],
+                free_kind="recurring",
+                enabled=True,
+                verified_at="test",
+            ),
+            ModelSpec(
+                provider="bigmodel",
+                model="b",
+                durations=[5],
+                free_kind="recurring",
+                enabled=True,
+                verified_at="test",
+            ),
+        ]
+    )
+    assert registry.durations_ladder(free_only=True) == [12.0, 5.0]
+
+    restricted = registry.restrict_to({"bigmodel"})
+    assert restricted.durations_ladder(free_only=True) == [5.0]
+
+    storyboard = plan_storyboard(
+        "a red fox at dusk", target_seconds=20, registry=restricted
+    )
+    assert [shot.duration for shot in storyboard.shots] == [5.0, 5.0, 5.0, 5.0]
+
+    # Nothing configured: keep the full catalogue rather than planning a stub.
+    assert registry.restrict_to({"nobody"}) is registry

@@ -39,6 +39,7 @@ from omnireel.assembly import AssemblyError  # noqa: E402
 from omnireel.capabilities import CapabilityRegistry, ModelSpec  # noqa: E402
 from omnireel.config import Settings  # noqa: E402
 from omnireel.planner import plan_storyboard  # noqa: E402
+from omnireel.providers import build_providers, configured_providers  # noqa: E402
 from omnireel.providers.mock import MockProvider  # noqa: E402
 
 #: How far the finished film may drift from ``--expect`` before it is a failure.
@@ -119,7 +120,9 @@ async def run(
     settings = Settings.from_env()
 
     if dry_run:
-        registry = CapabilityRegistry.default(settings)
+        registry = CapabilityRegistry.default(settings).restrict_to(
+            configured_providers(build_providers(settings))
+        )
         storyboard = plan_storyboard(
             prompt,
             target_seconds=target,
@@ -174,7 +177,9 @@ async def run(
         prompt,
         target_seconds=target,
         style=style,
-        registry=application.registry,
+        registry=application.registry.restrict_to(
+            configured_providers(application.providers)
+        ),
         free_only=settings.free_only,
     )
     project = store.create_project(

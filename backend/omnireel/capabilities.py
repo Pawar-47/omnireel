@@ -523,6 +523,24 @@ class CapabilityRegistry:
     def for_provider(self, provider: str) -> list[ModelSpec]:
         return [spec for spec in self._models.values() if spec.provider == provider]
 
+    def restrict_to(self, providers: Iterable[str] | None) -> "CapabilityRegistry":
+        """A view holding only models whose provider is actually available.
+
+        The catalogue lists every model OmniReel knows, including ones whose key
+        you do not have. Planning from the full list is wrong: with only a
+        BigModel key the planner would still ask for 12 s shots that only Agnes
+        offers, and every scene would then sit in ``waiting`` because no
+        configured model can take it.
+
+        Falls back to the whole registry when nothing is configured, so a keyless
+        install still gets a plausible storyboard instead of a one-shot film.
+        """
+        if providers is None:
+            return self
+        wanted = set(providers)
+        specs = [spec for spec in self._models.values() if spec.provider in wanted]
+        return CapabilityRegistry(specs) if specs else self
+
     def providers(self) -> list[str]:
         seen: list[str] = []
         for spec in self._models.values():

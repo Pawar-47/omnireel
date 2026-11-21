@@ -50,6 +50,12 @@ Two more genuinely free video sources, one paid aggregator, and a licence review
 - `.env.example`, `PROVIDER_RESEARCH.md`, `MODEL_COMPATIBILITY.md`, `README.md` updated with the new sources and the audit's publishable findings.
 
 ### Fixed
+- **A project planned around models you have no key for.** The planner read the
+  whole catalogue, so with only a BigModel key it still asked for 12 s shots that
+  only Agnes offers - and every scene then sat in `waiting`, because no
+  configured model could take it. Planning now uses
+  `CapabilityRegistry.restrict_to(configured providers)`; with a single 5 s
+  provider a 20 s film becomes four 5 s scenes it can actually generate.
 - The storyboard's `camera` field and the `Camera:` line inside the prompt
   disagreed on every third shot: the prompt drew a random camera variant while
   the field kept the beat's own move, so a camera edited on screen never reached

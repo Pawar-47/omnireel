@@ -25,6 +25,7 @@ from .config import (
     Settings,
 )
 from .planner import STYLE_PROFILES, plan_storyboard
+from .providers import configured_providers
 from .scheduler import MODES
 from .audio import available_engines
 
@@ -242,7 +243,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             style=payload.style,
             aspect_ratio=payload.aspect_ratio,
             resolution=payload.resolution,
-            registry=app_ctx.registry,
+            registry=app_ctx.registry.restrict_to(configured_providers(app_ctx.providers)),
             free_only=free_only,
         )
         project = store.create_project(
@@ -308,7 +309,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             style=project["style"],
             aspect_ratio=project["aspect_ratio"],
             resolution=project["resolution"],
-            registry=app_ctx.registry,
+            registry=app_ctx.registry.restrict_to(configured_providers(app_ctx.providers)),
             free_only=bool(project["free_only"]),
         )
         app_ctx.db.execute("DELETE FROM scenes WHERE project_id=?", (project_id,))
