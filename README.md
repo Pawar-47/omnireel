@@ -38,6 +38,7 @@ The default target is 120 seconds. Twelve 10-second clips, twenty 6-second clips
 - Editable storyboard: every scene's prompt, camera and lighting can be changed before spending a call
 
 **Scheduling**
+- Three independent free sources enabled by default — Agnes, Zhipu CogVideoX-Flash and ModelScope — so one provider resting does not stall a two-minute project
 - Persistent quota ledger (daily windows, trial credits, promotional expiry, per-key rate limits)
 - Provider health with circuit breaking and exponential backoff
 - Four generation modes: `free_max` (default), `balanced`, `best_quality`, `preferred`
@@ -82,8 +83,11 @@ Full instructions: [INSTALLATION.md](INSTALLATION.md). Keys and endpoints: [API_
 ## Provider status — read this before expecting free footage
 
 | Provider | Models | Status in OmniReel | Free? |
-|---|---|---|---|
+|---|---|---|---|---|
 | **Agnes AI** | Video 2.5 Flash | **Fully implemented and verified.** `POST /v1/videos`, poll `/v1/videos/{id}`, `metadata.url` on completion. 4–12 s clips, 720p. | Recurring free with a ~16 req/min ceiling |
+| **Zhipu BigModel** | CogVideoX-Flash | **Implemented and verified from vendor docs.** `POST /api/paas/v4/videos/generations`, poll `/async-result/{id}`, `video_result[0].url`. | **Recurring free** — priced 免费. Clip length is service-chosen |
+| **ModelScope** | MiniMax H3 | **Implemented and verified from vendor docs.** `POST /v1/videos/generations`, poll `/v1/tasks/{id}`. 3/5/10 s. | Free, credit-metered from a daily 魔粒 wallet |
+| **Pollinations** | 28 models: Veo 3.1, Kling 3.0, Seedance, WAN, LTX, MiniMax, Grok | Implemented (async job flow). One key, every major hosted model, including the only 15 s clip here. | **No** — every video model is `paid_only` |
 | **Replicate** | MiniMax Video-01 | Implemented (official predictions API). 6 s clips. | Trial runs only, then billed |
 | **Hugging Face** | WAN 2.2 T2V | Implemented (synchronous bytes). | Pay-as-you-go / PRO credits |
 | **Runware** | any video model | Implemented against its task API; **model id must be confirmed in your dashboard**. | One-off startup credits |
@@ -139,8 +143,8 @@ data/                 runtime: db, clips, frames, outputs (git-ignored)
 ## Honest limitations
 
 - **Free tiers change without notice.** If Agnes rotates its model names or durations, update `capabilities.py` or `config/providers.json` and re-check the provider's console.
-- **Only Agnes is verified end to end.** The other adapters are real HTTP implementations, but their exact model ids and free grants must be confirmed against your account before enabling.
-- **Clip lengths are guesses when providers are vague.** Requested vs actual duration is recorded per scene; assembly trims to the target and reports any shortfall instead of hiding it.
+- **No adapter has completed a live run yet.** Agnes, Zhipu BigModel, ModelScope and Pollinations are verified from vendor documentation — and, for Pollinations, from its live model registry. The rest are real HTTP implementations whose model ids and free grants must be confirmed in your account before enabling.
+- **Clip lengths are guesses when providers are vague.** `cogvideox-flash` is the extreme case: its request schema has no duration field at all, so 5 s is a planning assumption. Requested vs actual duration is recorded per scene; assembly trims to the target and reports any shortfall instead of hiding it.
 - **Continuity is best-effort.** Providers that accept a first-frame image get a real keyframe; the rest only get prompt-level consistency, which is weaker.
 - **Quality is model-limited.** Two minutes stitched from several models will have different "looks" between providers — that is the price of free multi-provider generation.
 - **This is not a render farm.** The controller is deliberately tiny; a 2-core i3 handles 120 s of 720p assembly in well under a minute.

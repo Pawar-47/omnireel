@@ -2,6 +2,30 @@
 
 All notable changes to OmniReel. Format follows Keep a Changelog; versions follow SemVer.
 
+## [1.1.0] — 2026-11-22
+
+Two more genuinely free video sources, one paid aggregator, and a licence review of the multi-provider projects that already exist.
+
+### Added — providers
+- **Zhipu BigModel adapter** (`providers/bigmodel.py`): `POST /api/paas/v4/videos/generations`, poll `GET /api/paas/v4/async-result/{id}`, result in `video_result[0].url`. `cogvideox-flash` is priced **免费 (free)** on BigModel's own pricing page, which makes it the second recurring free video source. Business errors arrive inside HTTP 200 bodies, so `1302` (concurrency) maps to `rate_limit`, `1305` (overload) to `unavailable`, `1113` (balance) to `quota`. `cogvideox-3` (5 s/10 s, 4K, first+last frame, native audio, 1 CNY/call) ships as paid.
+- **ModelScope API-Inference adapter** (`providers/modelscope.py`): `POST /v1/videos/generations` → `task_id`, poll `GET /v1/tasks/{id}` with `X-ModelScope-Task-Type: video_generation`, result at `outputs.url`. Free but credit-metered by a daily 魔粒 wallet; `MiniMax/MiniMax-H3` gives 3/5/10 s clips.
+- **Pollinations adapter** (`providers/pollinations.py`): one key, 28 video models (Veo 3.1, Kling 3.0, Seedance, WAN, LTX, MiniMax, Grok). Async job flow via `Prefer: respond-async` + `GET /v1/jobs/{id}`. Every video model there is `paid_only`, so it is a gap-filler, never a free source.
+- Six Pollinations models catalogued with durations read from the live registry, including the only 15 s length in the catalogue.
+
+### Added — tooling
+- `scripts/discover_models.py`: refreshes `config/providers.json` from a provider's machine-readable capability registry instead of a hand-copied table. This is the one design idea adopted from the existing gateway projects.
+- `backend/tests/test_providers.py`: 14 network-free adapter tests using `httpx.MockTransport` — response parsing, error mapping, the 409-while-pending case, inline versus remote media, and catalogue invariants including "the free ladder still solves an exact 120 s timeline".
+
+### Changed
+- Free ladder is now `[12, 10, 8, 6, 5, 4, 3]` with three enabled free providers, so a project survives one provider resting.
+- `.env.example`, `PROVIDER_RESEARCH.md`, `MODEL_COMPATIBILITY.md`, `README.md` updated with the new sources and the audit's publishable findings.
+
+### Known limitations at 1.1.0
+- `cogvideox-flash`'s clip length is **not** published by BigModel; 5 s is a planning assumption, measured and trimmed at assembly.
+- ModelScope and Pollinations image conditioning is not wired (both need a public image URL).
+- SiliconFlow, WaveSpeed, fal, Novita, Segmind, DeepInfra, Together, Kie, AI Horde and Cloudflare Workers AI were evaluated and **not** integrated as free — reasons recorded in `PROVIDER_RESEARCH.md` §3.
+- Still no live generation against any account: that needs the owner's keys.
+
 ## [1.0.0] — 2026-09-22
 
 First release: multi-provider, free-tier-first, two-minute AI film generation.

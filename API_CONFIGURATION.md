@@ -40,6 +40,12 @@ Everything OmniReel needs is configured through environment variables (a `.env` 
 | `AGNES_API_KEY` | Agnes AI | Free recurring allowance |
 | `AGNES_API_KEY_2`, `_3`, … | Agnes AI | Contiguous numbering; rotates on 429 |
 | `AGNES_BASE_URL` | Agnes AI | `https://apihub.agnes-ai.com` (global) or `https://api.agnes-ai.cn` (China). Key and site must match. |
+| `BIGMODEL_API_KEY` | Zhipu BigModel | **Free** source: `cogvideox-flash` is priced 免费. `cogvideox-3` is paid and stays out of free-only mode. |
+| `BIGMODEL_BASE_URL` | Zhipu BigModel | Default `https://open.bigmodel.cn/api/paas/v4` |
+| `MODELSCOPE_API_TOKEN` | ModelScope | Free, but spent from a daily 魔粒 credit wallet. The account needs a bound, real-name verified Alibaba Cloud account. |
+| `MODELSCOPE_BASE_URL` | ModelScope | Default `https://api-inference.modelscope.cn` |
+| `POLLINATIONS_API_KEY` | Pollinations | One key, 28 video models — **every one is `paid_only`**, so it never runs in `free_max` |
+| `POLLINATIONS_BASE_URL` | Pollinations | Default `https://gen.pollinations.ai` |
 | `REPLICATE_API_TOKEN` | Replicate | Trial runs, then billed |
 | `HF_TOKEN` | Hugging Face | Pay-as-you-go / PRO credits |
 | `RUNWARE_API_KEY` | Runware | One-off startup credits |
@@ -71,6 +77,18 @@ Multiple keys are supported only where a provider's own terms permit them (`AGNE
 ```
 
 `disable` / `enable` take `provider:model` keys. `models` entries are merged onto an existing entry or added as new. See `config/providers.json.example`.
+
+### Refreshing from a live registry
+
+Pollinations publishes its capability registry, so the catalogue can be re-derived instead of hand-copied:
+
+```bash
+.venv/bin/python scripts/discover_models.py            # table: model, access, durations, resolutions
+.venv/bin/python scripts/discover_models.py --json      # the config fragment
+.venv/bin/python scripts/discover_models.py --write     # create config/providers.json
+```
+
+It refuses to overwrite an existing file without `--force`, and it never guesses: a model with no published duration is skipped rather than invented.
 
 ## 3. HTTP API
 
