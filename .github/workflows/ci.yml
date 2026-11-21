@@ -37,6 +37,12 @@ jobs:
         working-directory: backend
         run: python -m pytest -q
 
+      - name: End-to-end film at 20 seconds (mock provider, real FFmpeg)
+        env:
+          OMNIREEL_DATA_DIR: ${{ runner.temp }}/omnireel-smoke
+        run: |
+          python scripts/smoke_run.py --seconds 20 --expect 20
+
       - name: Verify the app imports and boots its schema
         working-directory: backend
         env:

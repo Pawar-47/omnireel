@@ -13,6 +13,13 @@ Two more genuinely free video sources, one paid aggregator, and a licence review
 - Six Pollinations models catalogued with durations read from the live registry, including the only 15 s length in the catalogue.
 
 ### Added — tooling
+- `scripts/smoke_run.py --seconds 20 --expect 20`: asks for a 20-second film,
+  then fails unless the assembled MP4 really measures 20 s (1 s tolerance). CI
+  now gates every push on exactly that, with the mock provider and real FFmpeg.
+- `scripts/smoke_run.py --live`: the same end-to-end run against the real
+  providers in `.env`, so a first real check costs two API calls instead of
+  twenty-four. It refuses to start with no configured provider, and it excludes
+  the mock adapter so a "live" film can never contain colour cards.
 - `scripts/discover_models.py`: refreshes `config/providers.json` from a provider's machine-readable capability registry instead of a hand-copied table. This is the one design idea adopted from the existing gateway projects.
 - `backend/tests/test_providers.py`: 14 network-free adapter tests using `httpx.MockTransport` — response parsing, error mapping, the 409-while-pending case, inline versus remote media, and catalogue invariants including "the free ladder still solves an exact 120 s timeline".
 

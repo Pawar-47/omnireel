@@ -12,7 +12,7 @@ Updated: 2026-11-22 · Version: 1.1.0
 | Provider adapters | 9: Agnes and Zhipu BigModel verified from vendor docs; ModelScope and Pollinations verified from docs + live registry; Replicate/HF/Runware/gateway implemented, unverified live; mock for tests |
 | Free video sources | **3** — Agnes (recurring), Zhipu `cogvideox-flash` (免费), ModelScope (daily 魔粒 wallet) |
 | Frontend | Complete — studio, storyboard, production monitor, provider dashboard, library |
-| Tests | 8 files, 75+ cases — network-free; adapter tests drive `httpx.MockTransport` |
+| Tests | 8 files, 75+ cases — network-free; adapter tests drive `httpx.MockTransport`. CI also gates every push on a real 20 s end-to-end film |
 | Scripts | install / run / dev / smoke_run / **discover_models** |
 | Documentation | README, MASTER_PLAN, CHECKPOINT, CHANGELOG, PROVIDER_RESEARCH, MODEL_COMPATIBILITY, INSTALLATION, API_CONFIGURATION |
 | Git | Committed and pushed to the public repository |
@@ -26,15 +26,16 @@ Updated: 2026-11-22 · Version: 1.1.0
 
 Nothing in this repository claims otherwise, and no output is presented as AI-generated unless a real provider produced it.
 
-## First six commands on your machine
+## First seven commands on your machine
 
 ```bash
-./scripts/install.sh                 # 1. venv + deps + frontend build + .env
-.venv/bin/python -m pytest backend -q   # 2. run the test suite
-.venv/bin/python scripts/smoke_run.py --minutes 2   # 3. full offline pipeline + FFmpeg
+./scripts/install.sh                              # 1. venv + deps + frontend build + .env
+.venv/bin/python -m pytest backend -q             # 2. run the test suite
+.venv/bin/python scripts/smoke_run.py --seconds 20 --expect 20   # 3. a 20 s film, offline
 nano .env                            # 4. add BIGMODEL_API_KEY (free) and/or AGNES_API_KEY
-./scripts/run.sh                     # 5. open http://127.0.0.1:8000
-.venv/bin/python scripts/discover_models.py   # 6. see what the paid aggregator offers now
+.venv/bin/python scripts/smoke_run.py --seconds 20 --live        # 5. a real 20 s film (2 calls)
+./scripts/run.sh                     # 6. open http://127.0.0.1:8000
+.venv/bin/python scripts/discover_models.py   # 7. see what the paid aggregator offers now
 ```
 
 If step 2 fails, fix the tests before trusting step 3.

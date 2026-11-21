@@ -70,13 +70,21 @@ nano .env                         # set BIGMODEL_API_KEY (free) or AGNES_API_KEY
 ./scripts/run.sh                  # http://127.0.0.1:8000
 ```
 
-Prove the machine works before spending a call:
+Prove the machine works before spending a call — a 20-second film takes seconds:
 
 ```bash
-.venv/bin/python scripts/smoke_run.py --minutes 2
+.venv/bin/python scripts/smoke_run.py --seconds 20 --expect 20
 ```
 
-That runs the entire pipeline with the offline mock provider and real FFmpeg, and tells you the exact duration of the film it produced. Mock clips are plain colour cards — never mistake them for AI footage.
+That runs the whole chain (storyboard → scheduler → providers → FFmpeg) with the offline mock provider and real FFmpeg, and **fails unless the finished MP4 measures 20 s**. `--minutes 2` does the same at full length. Mock clips are plain colour cards — never mistake them for AI footage.
+
+Once a key is in `.env`, the same command makes a genuine film, and 20 seconds costs only two calls:
+
+```bash
+.venv/bin/python scripts/smoke_run.py --seconds 20 --live
+```
+
+Start there rather than at two minutes: a stuck model costs you two calls, not twenty-four.
 
 Full instructions: [INSTALLATION.md](INSTALLATION.md). Keys and endpoints: [API_CONFIGURATION.md](API_CONFIGURATION.md).
 
