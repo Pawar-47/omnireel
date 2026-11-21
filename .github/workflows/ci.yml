@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.txt
+
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg espeak-ng
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements-dev.txt
+
+      - name: Run the test suite
+        working-directory: backend
+        run: python -m pytest -q
+
+      - name: Verify the app imports and boots its schema
+        working-directory: backend
+        env:
+          OMNIREEL_DATA_DIR: ${{ runner.temp }}/omnireel-ci
+          OMNIREEL_ENABLE_MOCK: "1"
+        run: |
+          python - <<'PY'
+          from omnireel.api import create_app
+          from omnireel.config import Settings
+
+          settings = Settings.from_env()
+          settings.ensure_dirs()
+          app = create_app(settings)
+          from fastapi.testclient import TestClient
+          client = TestClient(app)
+          health = client.get("/api/health").json()
+          assert health["status"] == "ok", health
+          config = client.get("/api/config").json()
+          assert config["durations_ladder"], config
+          print("boot ok:", health["version"], config["durations_ladder"])
+          PY
+
+  frontend:
+    name: Frontend build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package.json
+
+      - name: Install and build
+        working-directory: frontend
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
+
+      - name: Confirm the build produced an entry point
+        run: test -f frontend/dist/index.html
