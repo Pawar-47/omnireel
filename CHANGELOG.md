@@ -20,6 +20,13 @@ Two more genuinely free video sources, one paid aggregator, and a licence review
 - Free ladder is now `[12, 10, 8, 6, 5, 4, 3]` with three enabled free providers, so a project survives one provider resting.
 - `.env.example`, `PROVIDER_RESEARCH.md`, `MODEL_COMPATIBILITY.md`, `README.md` updated with the new sources and the audit's publishable findings.
 
+### Fixed
+- `classify_http()` no longer lets a response body that merely mentions a balance
+  reclassify an HTTP 402 as an exhausted free allowance. A provider asking for
+  payment now stays `paid_required` (6-hour pause) instead of `quota` (30-minute
+  pause), so the failover reason shown on a scene names the real cause. Caught by
+  CI on the Pollinations adapter test.
+
 ### Known limitations at 1.1.0
 - `cogvideox-flash`'s clip length is **not** published by BigModel; 5 s is a planning assumption, measured and trimmed at assembly.
 - ModelScope and Pollinations image conditioning is not wired (both need a public image URL).

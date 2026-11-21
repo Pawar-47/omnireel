@@ -66,7 +66,7 @@ The default target is 120 seconds. Twelve 10-second clips, twenty 6-second clips
 git clone <your-fork-url> omnireel
 cd omnireel
 ./scripts/install.sh              # venv, backend deps, frontend build, .env
-nano .env                         # set AGNES_API_KEY
+nano .env                         # set BIGMODEL_API_KEY (free) or AGNES_API_KEY
 ./scripts/run.sh                  # http://127.0.0.1:8000
 ```
 
@@ -83,7 +83,7 @@ Full instructions: [INSTALLATION.md](INSTALLATION.md). Keys and endpoints: [API_
 ## Provider status — read this before expecting free footage
 
 | Provider | Models | Status in OmniReel | Free? |
-|---|---|---|---|---|
+|---|---|---|---|
 | **Agnes AI** | Video 2.5 Flash | **Fully implemented and verified.** `POST /v1/videos`, poll `/v1/videos/{id}`, `metadata.url` on completion. 4–12 s clips, 720p. | Recurring free with a ~16 req/min ceiling |
 | **Zhipu BigModel** | CogVideoX-Flash | **Implemented and verified from vendor docs.** `POST /api/paas/v4/videos/generations`, poll `/async-result/{id}`, `video_result[0].url`. | **Recurring free** — priced 免费. Clip length is service-chosen |
 | **ModelScope** | MiniMax H3 | **Implemented and verified from vendor docs.** `POST /v1/videos/generations`, poll `/v1/tasks/{id}`. 3/5/10 s. | Free, credit-metered from a daily 魔粒 wallet |
@@ -119,11 +119,12 @@ backend/
     assembly.py       FFmpeg plan + execution
     continuity.py     frame extraction, ffprobe helpers
     audio.py          offline narration
-    providers/        agnes, replicate, huggingface, runware, yepapi, mock
+    providers/        agnes, bigmodel, modelscope, pollinations,
+                      replicate, huggingface, runware, yepapi, mock
     api.py            FastAPI surface
-  tests/              planner, quota, scheduler, worker, assembly, API
+  tests/              planner, quota, scheduler, worker, assembly, API, providers
 frontend/             React + Vite studio
-scripts/              install, run, dev, smoke_run
+scripts/              install, run, dev, smoke_run, discover_models
 config/               provider override example
 data/                 runtime: db, clips, frames, outputs (git-ignored)
 ```

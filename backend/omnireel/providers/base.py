@@ -118,7 +118,13 @@ def classify_http(status_code: int, body: str = "") -> ProviderError:
     else:
         kind = "transient"
 
-    if any(token in lowered for token in ("insufficient", "quota", "credit", "balance")):
+    # A 402 already means "this needs money", so a body that happens to mention a
+    # balance must not reclassify it as an exhausted free allowance: the ledger
+    # pauses those two for very different lengths (30 minutes vs 6 hours) and the
+    # failover reason shown to the user should say which one actually happened.
+    if status_code != 402 and any(
+        token in lowered for token in ("insufficient", "quota", "credit", "balance")
+    ):
         kind = "quota"
 
     return ProviderError(
