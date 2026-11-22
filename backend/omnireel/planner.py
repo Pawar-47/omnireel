@@ -606,6 +606,20 @@ def plan_storyboard(
             for value in registry.durations_ladder(free_only=free_only)
             if value <= (max_shot_seconds or value)
         ]
+        # Prefer shot lengths that more than one model can produce. A 12 s shot
+        # only Agnes offers cannot fail over when Agnes' queue is full, and the
+        # whole project then waits on one provider - which is exactly how the
+        # first live run stalled. With a single configured model nothing is
+        # redundant and the ladder is left untouched.
+        redundancy: dict[float, int] = {}
+        for spec in registry.enabled():
+            if free_only and not spec.free_eligible:
+                continue
+            for value in spec.durations:
+                redundancy[float(value)] = redundancy.get(float(value), 0) + 1
+        redundant = [value for value in ladder if redundancy.get(value, 0) >= 2]
+        if redundant:
+            ladder = [value for value in ladder if value <= max(redundant)]
     if not ladder:
         ladder = [10.0, 8.0, 6.0, 5.0, 4.0]
 

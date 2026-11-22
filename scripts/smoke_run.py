@@ -233,7 +233,11 @@ async def run(
         tick += 1
         if current["status"] in {"completed", "failed"}:
             break
-        if current["status"] == "waiting" and not waiting_reported:
+        if (
+            current["status"] == "waiting"
+            and not waiting_reported
+            and ready < len(scenes)
+        ):
             waiting_reported = True
             print("\nProject is waiting: nothing could be dispatched. Why:")
             for item in scenes:
