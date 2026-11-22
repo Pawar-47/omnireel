@@ -62,10 +62,21 @@ jobs:
         id: key
         env:
           BIGMODEL_API_KEY: ${{ secrets.BIGMODEL_API_KEY }}
+          ZHIPU_API_KEY: ${{ secrets.ZHIPU_API_KEY }}
           AGNES_API_KEY: ${{ secrets.AGNES_API_KEY }}
           MODELSCOPE_API_TOKEN: ${{ secrets.MODELSCOPE_API_TOKEN }}
         run: |
-          if [ -z "$BIGMODEL_API_KEY$AGNES_API_KEY$MODELSCOPE_API_TOKEN" ]; then
+          echo "Repository secrets this workflow reads. Values are never printed;"
+          echo "the length is shown so a truncated paste is visible."
+          for name in BIGMODEL_API_KEY ZHIPU_API_KEY AGNES_API_KEY MODELSCOPE_API_TOKEN; do
+            value="${!name}"
+            if [ -n "$value" ]; then
+              echo "  $name: set (${#value} characters)"
+            else
+              echo "  $name: not set"
+            fi
+          done
+          if [ -z "$BIGMODEL_API_KEY$ZHIPU_API_KEY$AGNES_API_KEY$MODELSCOPE_API_TOKEN" ]; then
             echo "found=false" >> "$GITHUB_OUTPUT"
           else
             echo "found=true" >> "$GITHUB_OUTPUT"
@@ -74,10 +85,12 @@ jobs:
       - name: No key configured
         if: steps.key.outputs.found != 'true'
         run: |
-          echo "::error::No provider key found, so no film can be generated."
+          echo "::error::None of the secrets above are set, so no film can be generated."
           echo "Add one secret, then run this workflow again:"
           echo "  Settings -> Secrets and variables -> Actions -> New repository secret"
-          echo "  BIGMODEL_API_KEY   (free - CogVideoX-Flash is priced 免费 at bigmodel.cn)"
+          echo "  Name:  BIGMODEL_API_KEY"
+          echo "  Value: the key from bigmodel.cn (free - CogVideoX-Flash is priced 免费)"
+          echo "A key stored in a local .env on your own machine cannot reach this workflow."
           exit 1
 
       - name: Plan the film first (no API calls)
@@ -94,7 +107,7 @@ jobs:
         if: steps.key.outputs.found == 'true'
         env:
           OMNIREEL_DATA_DIR: ${{ runner.temp }}/omnireel-live
-          BIGMODEL_API_KEY: ${{ secrets.BIGMODEL_API_KEY }}
+          BIGMODEL_API_KEY: ${{ secrets.BIGMODEL_API_KEY || secrets.ZHIPU_API_KEY }}
           AGNES_API_KEY: ${{ secrets.AGNES_API_KEY }}
           MODELSCOPE_API_TOKEN: ${{ secrets.MODELSCOPE_API_TOKEN }}
           PROMPT: ${{ inputs.prompt }}
