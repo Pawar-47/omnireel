@@ -133,6 +133,12 @@ async def run(
         print_storyboard(
             storyboard, ladder=registry.durations_ladder(free_only=settings.free_only)
         )
+        if not registry.durations_ladder(free_only=settings.free_only):
+            print(
+                "warning: no configured provider offers a free-eligible model, so the "
+                "planner used its default clip lengths. Add a key to see the real plan.",
+                file=sys.stderr,
+            )
         print("\nNo API call made - this is the plan a real run would execute.")
         return 0
 

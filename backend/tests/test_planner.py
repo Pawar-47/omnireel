@@ -212,3 +212,34 @@ def test_plan_follows_only_configured_providers():
 
     # Nothing configured: keep the full catalogue rather than planning a stub.
     assert registry.restrict_to({"nobody"}) is registry
+
+
+
+def test_restrict_ignores_a_provider_that_contributes_nothing():
+    """A configured provider with no enabled models must not empty the ladder.
+
+    The mock adapter needs no key, so it is always "configured"; its models are
+    disabled unless OMNIREEL_ENABLE_MOCK is set. Narrowing to it alone would
+    leave no clip lengths at all and quietly degrade the plan to defaults.
+    """
+    registry = CapabilityRegistry(
+        [
+            ModelSpec(
+                provider="mock",
+                model="m",
+                durations=[10],
+                free_kind="recurring",
+                enabled=False,
+                verified_at="test",
+            ),
+            ModelSpec(
+                provider="agnes",
+                model="a",
+                durations=[12],
+                free_kind="recurring",
+                enabled=True,
+                verified_at="test",
+            ),
+        ]
+    )
+    assert registry.restrict_to({"mock"}) is registry

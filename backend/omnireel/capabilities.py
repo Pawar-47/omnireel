@@ -532,14 +532,20 @@ class CapabilityRegistry:
         offers, and every scene would then sit in ``waiting`` because no
         configured model can take it.
 
-        Falls back to the whole registry when nothing is configured, so a keyless
-        install still gets a plausible storyboard instead of a one-shot film.
+        Falls back to the whole registry when nothing usable is configured, so a
+        keyless install still gets a plausible storyboard instead of a one-shot
+        film. "Usable" means at least one *enabled* model: a provider can be
+        configured yet contribute nothing (the mock adapter is always configured,
+        but its models are disabled unless the env flag is set), and narrowing to
+        that leaves an empty ladder that silently degrades the plan.
         """
         if providers is None:
             return self
         wanted = set(providers)
         specs = [spec for spec in self._models.values() if spec.provider in wanted]
-        return CapabilityRegistry(specs) if specs else self
+        if not any(spec.enabled for spec in specs):
+            return self
+        return CapabilityRegistry(specs)
 
     def providers(self) -> list[str]:
         seen: list[str] = []
