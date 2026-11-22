@@ -100,10 +100,11 @@ jobs:
           ZHIPU_API_KEY: ${{ secrets.ZHIPU_API_KEY }}
           AGNES_API_KEY: ${{ secrets.AGNES_API_KEY }}
           MODELSCOPE_API_TOKEN: ${{ secrets.MODELSCOPE_API_TOKEN }}
+          POLLINATIONS_API_KEY: ${{ secrets.POLLINATIONS_API_KEY }}
         run: |
           echo "Repository secrets this workflow reads. Values are never printed;"
           echo "the length is shown so a truncated paste is visible."
-          for name in BIGMODEL_API_KEY ZHIPU_API_KEY AGNES_API_KEY MODELSCOPE_API_TOKEN; do
+          for name in BIGMODEL_API_KEY ZHIPU_API_KEY AGNES_API_KEY MODELSCOPE_API_TOKEN POLLINATIONS_API_KEY; do
             value="${!name}"
             if [ -n "$value" ]; then
               echo "  $name: set (${#value} characters)"
@@ -111,7 +112,7 @@ jobs:
               echo "  $name: not set"
             fi
           done
-          if [ -z "$BIGMODEL_API_KEY$ZHIPU_API_KEY$AGNES_API_KEY$MODELSCOPE_API_TOKEN" ]; then
+          if [ -z "$BIGMODEL_API_KEY$ZHIPU_API_KEY$AGNES_API_KEY$MODELSCOPE_API_TOKEN$POLLINATIONS_API_KEY" ]; then
             echo "found=false" >> "$GITHUB_OUTPUT"
           else
             echo "found=true" >> "$GITHUB_OUTPUT"
@@ -137,6 +138,7 @@ jobs:
           BIGMODEL_API_KEY: ${{ secrets.BIGMODEL_API_KEY || secrets.ZHIPU_API_KEY }}
           AGNES_API_KEY: ${{ secrets.AGNES_API_KEY }}
           MODELSCOPE_API_TOKEN: ${{ secrets.MODELSCOPE_API_TOKEN }}
+          POLLINATIONS_API_KEY: ${{ secrets.POLLINATIONS_API_KEY }}
         run: |
           python scripts/smoke_run.py --seconds "$SECONDS_TARGET" --dry-run --live \
             --style "$FILM_STYLE" --prompt "$PROMPT"
@@ -148,6 +150,7 @@ jobs:
           BIGMODEL_API_KEY: ${{ secrets.BIGMODEL_API_KEY || secrets.ZHIPU_API_KEY }}
           AGNES_API_KEY: ${{ secrets.AGNES_API_KEY }}
           MODELSCOPE_API_TOKEN: ${{ secrets.MODELSCOPE_API_TOKEN }}
+          POLLINATIONS_API_KEY: ${{ secrets.POLLINATIONS_API_KEY }}
         run: |
           python scripts/smoke_run.py --probe --live
 
@@ -158,6 +161,7 @@ jobs:
           BIGMODEL_API_KEY: ${{ secrets.BIGMODEL_API_KEY || secrets.ZHIPU_API_KEY }}
           AGNES_API_KEY: ${{ secrets.AGNES_API_KEY }}
           MODELSCOPE_API_TOKEN: ${{ secrets.MODELSCOPE_API_TOKEN }}
+          POLLINATIONS_API_KEY: ${{ secrets.POLLINATIONS_API_KEY }}
         run: |
           python scripts/smoke_run.py --seconds "$SECONDS_TARGET" --live \
             --style "$FILM_STYLE" --prompt "$PROMPT"
