@@ -310,6 +310,8 @@ async def probe(settings: Settings) -> int:
         return 2
 
     accepted = 0
+    busy = 0
+    rejected: list[str] = []
     for spec in candidates:
         provider = providers.get(spec.provider)
         if provider is None or not provider.configured:
@@ -322,8 +324,20 @@ async def probe(settings: Settings) -> int:
                 VideoRequest(prompt="a calm sea at sunrise, gentle waves", duration=seconds),
             )
         except ProviderError as exc:
-            print(f"  REFUSED [{exc.kind}] http={exc.status_code}: {exc}")
+            if exc.kind == "auth":
+                rejected.append(f"{spec.provider}: {exc}")
+                print(f"  CREDENTIAL REJECTED [{exc.kind}] http={exc.status_code}: {exc}")
+            elif exc.kind in {"unavailable", "rate_limit", "transient"}:
+                busy += 1
+                print(
+                    f"  reachable but busy [{exc.kind}] http={exc.status_code}: {exc}\n"
+                    "    the credential was accepted - the provider is throttling right now"
+                )
+            else:
+                rejected.append(f"{spec.provider}: {exc}")
+                print(f"  refused [{exc.kind}] http={exc.status_code}: {exc}")
         except Exception as exc:  # noqa: BLE001 - the point is to surface it
+            rejected.append(f"{spec.provider}: {exc}")
             print(f"  ERROR {type(exc).__name__}: {exc}")
         else:
             accepted += 1
@@ -331,11 +345,24 @@ async def probe(settings: Settings) -> int:
         finally:
             await provider.aclose()
 
-    if not accepted:
-        print("\nEvery configured model refused the request - see above.", file=sys.stderr)
-        return 1
-    print(f"\n{accepted} model(s) accepted a submission.")
-    return 0
+    print()
+    if accepted:
+        print(f"{accepted} model(s) accepted a submission.")
+    if busy:
+        print(
+            f"{busy} model(s) authenticate correctly but are busy; a run will retry them "
+            "with backoff rather than giving up."
+        )
+    if rejected:
+        print("Problems that a retry will not fix:", file=sys.stderr)
+        for line in rejected:
+            print(f"  {line}", file=sys.stderr)
+
+    if accepted or busy:
+        print("\nProceeding: at least one provider is usable.")
+        return 0
+    print("\nNo provider is usable - fix the problems above first.", file=sys.stderr)
+    return 1
 
 
 def main(argv: list[str] | None = None) -> int:
