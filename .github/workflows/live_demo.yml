@@ -25,6 +25,12 @@ on:
         description: "cinematic, documentary, anime, nature, noir, scifi, product, explainer"
         required: true
         default: "nature"
+  # Committing requests/film.txt starts a run too, so a film can be asked for
+  # without the Actions UI: line 1 is the prompt, line 2 the seconds, line 3 the
+  # style. Editing that file and committing it is the whole trigger.
+  push:
+    paths:
+      - "requests/film.txt"
 
 permissions:
   contents: read
@@ -54,6 +60,34 @@ jobs:
 
       - name: Install Python dependencies
         run: pip install -r backend/requirements-dev.txt
+
+      - name: Resolve the film request
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          DISPATCH_PROMPT: ${{ inputs.prompt }}
+          DISPATCH_SECONDS: ${{ inputs.seconds }}
+          DISPATCH_STYLE: ${{ inputs.style }}
+        run: |
+          if [ "$EVENT_NAME" = "push" ]; then
+            echo "Reading requests/film.txt (line 1 prompt, 2 seconds, 3 style)"
+            PROMPT=$(sed -n '1p' requests/film.txt)
+            SECONDS_TARGET=$(sed -n '2p' requests/film.txt)
+            FILM_STYLE=$(sed -n '3p' requests/film.txt)
+          else
+            PROMPT="$DISPATCH_PROMPT"
+            SECONDS_TARGET="$DISPATCH_SECONDS"
+            FILM_STYLE="$DISPATCH_STYLE"
+          fi
+          echo "prompt:  $PROMPT"
+          echo "seconds: $SECONDS_TARGET"
+          echo "style:   $FILM_STYLE"
+          {
+            echo "PROMPT<<PROMPT_EOF"
+            echo "$PROMPT"
+            echo "PROMPT_EOF"
+            echo "SECONDS_TARGET=$SECONDS_TARGET"
+            echo "FILM_STYLE=$FILM_STYLE"
+          } >> "$GITHUB_ENV"
 
       # Inputs reach the shell through the environment, never through inline
       # interpolation, so a prompt containing quotes or $() cannot break or
@@ -95,10 +129,6 @@ jobs:
 
       - name: Plan the film first (no API calls)
         if: steps.key.outputs.found == 'true'
-        env:
-          PROMPT: ${{ inputs.prompt }}
-          SECONDS_TARGET: ${{ inputs.seconds }}
-          FILM_STYLE: ${{ inputs.style }}
         run: |
           python scripts/smoke_run.py --seconds "$SECONDS_TARGET" --dry-run --live \
             --style "$FILM_STYLE" --prompt "$PROMPT"
@@ -110,9 +140,6 @@ jobs:
           BIGMODEL_API_KEY: ${{ secrets.BIGMODEL_API_KEY || secrets.ZHIPU_API_KEY }}
           AGNES_API_KEY: ${{ secrets.AGNES_API_KEY }}
           MODELSCOPE_API_TOKEN: ${{ secrets.MODELSCOPE_API_TOKEN }}
-          PROMPT: ${{ inputs.prompt }}
-          SECONDS_TARGET: ${{ inputs.seconds }}
-          FILM_STYLE: ${{ inputs.style }}
         run: |
           python scripts/smoke_run.py --seconds "$SECONDS_TARGET" --live \
             --style "$FILM_STYLE" --prompt "$PROMPT"
