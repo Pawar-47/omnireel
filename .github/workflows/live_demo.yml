@@ -37,7 +37,8 @@ permissions:
 
 concurrency:
   group: live-film
-  cancel-in-progress: false
+  # A new request supersedes one that is stuck, instead of queueing behind it.
+  cancel-in-progress: true
 
 jobs:
   film:
@@ -133,8 +134,18 @@ jobs:
           python scripts/smoke_run.py --seconds "$SECONDS_TARGET" --dry-run --live \
             --style "$FILM_STYLE" --prompt "$PROMPT"
 
-      - name: Generate the film
+      - name: Probe the provider (one real call)
+        id: probe
         if: steps.key.outputs.found == 'true'
+        env:
+          BIGMODEL_API_KEY: ${{ secrets.BIGMODEL_API_KEY || secrets.ZHIPU_API_KEY }}
+          AGNES_API_KEY: ${{ secrets.AGNES_API_KEY }}
+          MODELSCOPE_API_TOKEN: ${{ secrets.MODELSCOPE_API_TOKEN }}
+        run: |
+          python scripts/smoke_run.py --probe --live
+
+      - name: Generate the film
+        if: steps.probe.outcome == 'success'
         env:
           OMNIREEL_DATA_DIR: ${{ runner.temp }}/omnireel-live
           BIGMODEL_API_KEY: ${{ secrets.BIGMODEL_API_KEY || secrets.ZHIPU_API_KEY }}
@@ -145,7 +156,7 @@ jobs:
             --style "$FILM_STYLE" --prompt "$PROMPT"
 
       - name: Contact sheet
-        if: steps.key.outputs.found == 'true'
+        if: steps.probe.outcome == 'success'
         env:
           OMNIREEL_DATA_DIR: ${{ runner.temp }}/omnireel-live
         run: |
@@ -156,7 +167,7 @@ jobs:
             -frames:v 1 "$OMNIREEL_DATA_DIR/contact-sheet.png"
 
       - name: Upload the REAL film
-        if: steps.key.outputs.found == 'true'
+        if: steps.probe.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: REAL-AI-film

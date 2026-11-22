@@ -208,6 +208,7 @@ async def run(
 
     deadline = time.monotonic() + (timeout if live else 600.0)
     tick = 0
+    waiting_reported = False
     while time.monotonic() < deadline:
         await application.worker.tick()
         current = store.get_project(application.db, project["id"])
@@ -224,6 +225,19 @@ async def run(
         tick += 1
         if current["status"] in {"completed", "failed"}:
             break
+        if current["status"] == "waiting" and not waiting_reported:
+            waiting_reported = True
+            print("\nProject is waiting: nothing could be dispatched. Why:")
+            for item in scenes:
+                if item["status"] == "ready":
+                    continue
+                print(
+                    f"  scene {int(item['index_no']) + 1}: status={item['status']} "
+                    f"attempts={item['attempts']} "
+                    f"last_error={item.get('last_error') or '-'}"
+                )
+            print(f"  project: {current.get('status_message') or '-'}")
+            print("Still retrying until the deadline; stop the run to end it sooner.")
         await asyncio.sleep(0.05 if not live else max(1.0, settings.poll_interval_seconds))
 
     print()
@@ -271,6 +285,59 @@ def ffmpeg_available(settings: Settings) -> bool:
     return which(settings.ffmpeg) is not None
 
 
+async def probe(settings: Settings) -> int:
+    """Make one real submit per configured free model and print the answer.
+
+    A project that ends up ``waiting`` only says that nothing could be
+    dispatched; the reason lives in the provider's response. This spends a
+    single call and shows it, which is the difference between "it does not work"
+    and "the key was rejected" or "that field is not supported".
+    """
+    from omnireel.providers import build_providers
+    from omnireel.providers.base import ProviderError, VideoRequest
+
+    providers = build_providers(settings)
+    registry = CapabilityRegistry.default(settings).restrict_to(
+        configured_providers(providers)
+    )
+    candidates = [spec for spec in registry.enabled() if spec.free_eligible]
+    if not candidates:
+        print(
+            "No configured provider offers a free-eligible model, so there is "
+            "nothing to probe. Check the key names in .env or the repository secrets.",
+            file=sys.stderr,
+        )
+        return 2
+
+    accepted = 0
+    for spec in candidates:
+        provider = providers.get(spec.provider)
+        if provider is None or not provider.configured:
+            continue
+        seconds = min(spec.durations)
+        print(f"probing {spec.provider} / {spec.model} ({seconds:g}s) ...")
+        try:
+            result = await provider.submit(
+                spec.model,
+                VideoRequest(prompt="a calm sea at sunrise, gentle waves", duration=seconds),
+            )
+        except ProviderError as exc:
+            print(f"  REFUSED [{exc.kind}] http={exc.status_code}: {exc}")
+        except Exception as exc:  # noqa: BLE001 - the point is to surface it
+            print(f"  ERROR {type(exc).__name__}: {exc}")
+        else:
+            accepted += 1
+            print(f"  accepted: state={result.state} remote_id={result.remote_id}")
+        finally:
+            await provider.aclose()
+
+    if not accepted:
+        print("\nEvery configured model refused the request - see above.", file=sys.stderr)
+        return 1
+    print(f"\n{accepted} model(s) accepted a submission.")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="End-to-end film run (offline or live)")
     parser.add_argument(
@@ -291,6 +358,11 @@ def main(argv: list[str] | None = None) -> int:
         "--dry-run",
         action="store_true",
         help="print the storyboard and the available clip lengths, then stop",
+    )
+    parser.add_argument(
+        "--probe",
+        action="store_true",
+        help="make one real submit per configured free model and print the answer",
     )
     parser.add_argument("--minutes", type=float, default=None, help="film length in minutes")
     parser.add_argument(
@@ -327,6 +399,10 @@ def main(argv: list[str] | None = None) -> int:
             "this run plans whatever you asked for.",
             file=sys.stderr,
         )
+
+    if args.probe:
+        os.environ["OMNIREEL_ENABLE_MOCK"] = "0"
+        return asyncio.run(probe(Settings.from_env()))
 
     try:
         return asyncio.run(
