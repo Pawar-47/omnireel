@@ -186,13 +186,14 @@ async def run(
         )
         return 2
 
+    planning_registry = application.registry.restrict_to(
+        configured_providers(application.providers)
+    )
     storyboard = plan_storyboard(
         prompt,
         target_seconds=target,
         style=style,
-        registry=application.registry.restrict_to(
-            configured_providers(application.providers)
-        ),
+        registry=planning_registry,
         free_only=settings.free_only,
     )
     project = store.create_project(
@@ -239,12 +240,29 @@ async def run(
                 if item["status"] == "ready":
                     continue
                 print(
-                    f"  scene {int(item['index_no']) + 1}: status={item['status']} "
-                    f"attempts={item['attempts']} "
+                    f"  scene {int(item['index_no']) + 1}: {item['duration_seconds']:g}s "
+                    f"status={item['status']} attempts={item['attempts']} "
                     f"last_error={item.get('last_error') or '-'}"
                 )
             print(f"  project: {current.get('status_message') or '-'}")
-            print("Still retrying until the deadline; stop the run to end it sooner.")
+            print("  configured providers: " + (", ".join(sorted(usable_ids)) or "none"))
+            print(
+                "  clip lengths those models offer: "
+                + (
+                    ", ".join(
+                        f"{value:g}s"
+                        for value in planning_registry.durations_ladder(
+                            free_only=settings.free_only
+                        )
+                    )
+                    or "none"
+                )
+            )
+            print(
+                "\nA one-shot run cannot fix this by waiting, so it stops here rather\n"
+                "than idling to the deadline. Fix whatever is named above and run again."
+            )
+            return 1
         await asyncio.sleep(0.05 if not live else max(1.0, settings.poll_interval_seconds))
 
     print()
