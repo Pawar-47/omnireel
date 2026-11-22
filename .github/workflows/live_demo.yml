@@ -130,6 +130,13 @@ jobs:
 
       - name: Plan the film first (no API calls)
         if: steps.key.outputs.found == 'true'
+        env:
+          # The key is needed here too: the planner only counts providers that
+          # are configured, so without it the printed plan is the one you would
+          # get with every model available, not the one about to run.
+          BIGMODEL_API_KEY: ${{ secrets.BIGMODEL_API_KEY || secrets.ZHIPU_API_KEY }}
+          AGNES_API_KEY: ${{ secrets.AGNES_API_KEY }}
+          MODELSCOPE_API_TOKEN: ${{ secrets.MODELSCOPE_API_TOKEN }}
         run: |
           python scripts/smoke_run.py --seconds "$SECONDS_TARGET" --dry-run --live \
             --style "$FILM_STYLE" --prompt "$PROMPT"
