@@ -45,6 +45,13 @@ from omnireel.providers.mock import MockProvider  # noqa: E402
 #: How far the finished film may drift from ``--expect`` before it is a failure.
 EXPECT_TOLERANCE = 1.0
 
+#: A model id no provider serves. Sending it proves a key was accepted, because
+#: every API here authenticates before it validates the model: a bad key answers
+#: 401, a good one answers 400/404. That separates "your key is wrong" from "your
+#: request is wrong" without spending a generation from the free allowance the
+#: film itself needs.
+AUTH_PROBE_MODEL = "omnireel-auth-check-no-such-model"
+
 #: Prompt used when ``--prompt`` is not given: two visual beats, because a
 #: 20-second film over a free ladder is usually two clips.
 DEFAULT_PROMPT = (
@@ -286,12 +293,14 @@ def ffmpeg_available(settings: Settings) -> bool:
 
 
 async def probe(settings: Settings) -> int:
-    """Make one real submit per configured free model and print the answer.
+    """Check every configured provider's key without spending a generation.
 
     A project that ends up ``waiting`` only says that nothing could be
-    dispatched; the reason lives in the provider's response. This spends a
-    single call and shows it, which is the difference between "it does not work"
-    and "the key was rejected" or "that field is not supported".
+    dispatched; the reason lives in the provider's response. Rather than
+    generating a throwaway clip at each provider - which would eat the free
+    allowance the film itself needs - this submits a request for a model nobody
+    serves. Authentication happens before model validation, so a rejected key
+    answers 401 and a good one answers 400/404.
     """
     from omnireel.providers import build_providers
     from omnireel.providers.base import ProviderError, VideoRequest
@@ -317,31 +326,28 @@ async def probe(settings: Settings) -> int:
         if provider is None or not provider.configured:
             continue
         seconds = min(spec.durations)
-        print(f"probing {spec.provider} / {spec.model} ({seconds:g}s) ...")
+        print(f"checking the {spec.provider} key with a bogus model id (no generation spent) ...")
         try:
             result = await provider.submit(
-                spec.model,
-                VideoRequest(prompt="a calm sea at sunrise, gentle waves", duration=seconds),
+                AUTH_PROBE_MODEL,
+                VideoRequest(prompt="auth check", duration=seconds),
             )
         except ProviderError as exc:
             if exc.kind == "auth":
                 rejected.append(f"{spec.provider}: {exc}")
                 print(f"  CREDENTIAL REJECTED [{exc.kind}] http={exc.status_code}: {exc}")
-            elif exc.kind in {"unavailable", "rate_limit", "transient"}:
-                busy += 1
-                print(
-                    f"  reachable but busy [{exc.kind}] http={exc.status_code}: {exc}\n"
-                    "    the credential was accepted - the provider is throttling right now"
-                )
             else:
-                rejected.append(f"{spec.provider}: {exc}")
-                print(f"  refused [{exc.kind}] http={exc.status_code}: {exc}")
+                accepted += 1
+                print(
+                    f"  key accepted - authenticated, then refused the bogus model "
+                    f"[{exc.kind}] http={exc.status_code}"
+                )
         except Exception as exc:  # noqa: BLE001 - the point is to surface it
             rejected.append(f"{spec.provider}: {exc}")
             print(f"  ERROR {type(exc).__name__}: {exc}")
         else:
             accepted += 1
-            print(f"  accepted: state={result.state} remote_id={result.remote_id}")
+            print(f"  probe job accepted (state={result.state}) - key is fine")
         finally:
             await provider.aclose()
 
